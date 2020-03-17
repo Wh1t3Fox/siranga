@@ -4,6 +4,7 @@
 import logging
 import sys
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 if sys.version_info[0] < 3:
