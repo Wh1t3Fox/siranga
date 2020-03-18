@@ -1,32 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.styles import Style
+import subprocess
+import logging
+logger = logging.getLogger(__name__)
 
-style = Style.from_dict({
-    # User input (default text).
-    '':          '#c5c8c6',
 
-    # Prompt.
-    'username': '#b4b7b4',
-    'jump':     '#81a2be',
-    'arrow':    '#cc6666',
-    'host':     '#b4b7b4',
-})
+# check that the master process is running
+def socket_check(socket_path):
+    command = f'ssh -S {socket_path} -O check -'
 
-dis_completer = WordCompleter([
-    '!connect',
-    '!set',
-    '!exit',
-])
+    try:
+        subprocess.call(command.split())
+        return True
+    except:
+        return False
 
-conn_completer = WordCompleter([
-    '!disconnect',
-    '!get',
-    '!put',
-    '!-D',
-    '!-L',
-    '!-R',
-    '!-K',
-])
+# request forwardings without command execution
+def socket_forward(socket_path, cmd):
+    command = f'ssh -S {socket_path} -O forward {cmd} {host}'
+
+# cancel forwardings
+def socket_cancel(socket_path, cmd):
+    command = f'ssh -S {socket_path} -O cancel {cmd} {host}'
+
+# request the master to exit
+def socket_exit(socket_path):
+    command = f'ssh -S {socket_path} -O exit {host}'
+
+# request the master to stop accepting further multiplexing requests
+def socket_stop(socket_path):
+    command = f'ssh -S {socket_path} -O stop -'
+
+def execute(cmd):
+    try:
+        output = subprocess.check_output(cmd.split())
+        logger.info(output.decode())
+    except IndexError:
+        pass
+

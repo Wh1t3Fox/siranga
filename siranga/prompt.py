@@ -5,7 +5,11 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit import PromptSession
 
-from siranga.helpers import *
+import logging
+logger = logging.getLogger(__name__)
+
+from siranga import ACTIVE_CONNECTION
+from siranga.config import *
 
 class Prompt(object):
 
@@ -16,6 +20,7 @@ class Prompt(object):
             history = self._prompt_history,
             auto_suggest=AutoSuggestFromHistory(),
             enable_history_search=True,)
+        self.prompt = self.hosts
 
     @property
     def prompt(self):
@@ -27,7 +32,6 @@ class Prompt(object):
         self.__prompt.append(('class:username', 'siranga'))
 
         if hosts:
-            self.completer = conn_completer
             if len(hosts) == 2:
                 self.__prompt.append(('class:jump', '['))
                 for jump in hosts[1]:
@@ -41,7 +45,11 @@ class Prompt(object):
         self.__prompt.append(('class:arrow', ' → '))
 
     def show(self):
-        self.prompt = self.hosts
-        return self._session.prompt(self.__prompt, completer=self.completer, style=style).split()
+        if ACTIVE_CONNECTION:
+            completer = conn_completer
+        else:
+            completer = dis_completer
+
+        return self._session.prompt(self.__prompt, completer=completer, style=style)
 
 

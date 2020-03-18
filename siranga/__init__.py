@@ -1,10 +1,36 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
+import logging 
+import logging.config
 import sys
 
-logging.basicConfig(level=logging.INFO)
+CONNECTIONS = dict()
+ACTIVE_CONNECTION = None
+
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,  # this fixes the problem
+    'formatters': {
+        'standard': {
+            'format': '%(message)s'
+        },
+    },
+    'handlers': {
+        'default': {
+            'level':'INFO',
+            'class':'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['default'],
+            'level': 'INFO',
+            'propagate': True
+        }
+    }
+})
+
 logger = logging.getLogger(__name__)
 
 if sys.version_info[0] < 3:
