@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get upgrade -y && \
  apt-get -y install \
    git \
+   net-tools \
    python3-dev \
    python3-pip \
    python3-venv \

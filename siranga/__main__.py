@@ -20,7 +20,7 @@ def connect(host):
     Usage:
         !connect <host>
     '''
-    
+
     global ACTIVE_CONNECTIONS
     global ACTIVE_CONNECTION
 
@@ -69,12 +69,20 @@ def port_forward(cmd, opts):
         !-D <port> - setup socks proxy
         !-L <port>:<host>:<port> - local port forward
         !-R <port>:<host>:<port> - Open reverse tunnel
-        !-K <port>:<host>:<port> - stop forwarding
+        !-K -[R|L|D]<port>:<host>:<port> - stop forwarding
     '''
-    logger.info(f'port_f: {cmd} {opts}')
     if len(opts.split()) != 1:
         logger.error(port_forward.__doc__)
         return
+
+    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
+        logger.error('No active connection')
+        return
+
+    if cmd == '-K':
+        socket_cmd(ACTIVE_CONNECTION, 'cancel', opts)
+    else:
+        socket_cmd(ACTIVE_CONNECTION, 'forward', f'{cmd} {opts}')
 
 
 def transfer_file(direction, args):
@@ -119,15 +127,10 @@ def main():
             command = prompt.show()
             if not command.startswith('!'):
                 if ACTIVE_CONNECTION:
-                    remote = True
-                else:
-                    remote = False
-                try:
-                    execute(command, ACTIVE_CONNECTION, remote)
-                except:
-                    pass
-
-                continue
+                    try:
+                        execute(command, ACTIVE_CONNECTION)
+                    except:
+                        pass
             else:
                 command = command[1:].split()
                 if len(command) > 1:
@@ -142,7 +145,7 @@ def main():
                     elif command == 'shell':
                         interactive_shell()
                     elif command in ['-D', '-K', '-L', '-R']:
-                        port_forward(cmd, args)
+                        port_forward(command, args)
                     elif command in ['get', 'put']:
                         transfer_file(command, args)
                 else:

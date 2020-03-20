@@ -27,31 +27,31 @@ def socket_create(host):
     command = f'ssh -fN {SSH_OPTS} -S /tmp/siranga/{host} {host}'
 
     try:
-        subprocess.call(command.split())
+        subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     except:
         return False
 
 
-def socket_cmd(request, host, cmd=''):
+def socket_cmd(host, request, cmd=''):
     # check - that the master process is running
     # forward - request forwardings without command execution
     # cancel - forwardings
     # exit - request the master to exit
     # stop - request the master to stop accepting further multiplexing requests
-    command = f'ssh -S /tmp/siranga/{host} -O {request} {cmd} {host}'
+    command = f'ssh -O {request} {cmd} -S /tmp/siranga/{host} {host}'
 
     try:
-        subprocess.call(command.split())
+        subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
-    except:
+    except Exception as e:
         return False
 
-def execute(cmd, host='', remote=False):
-    # Chwck socket 
+def execute(cmd, host=''):
+    # Chwck socket
 
-    if remote:
-        cmd = f'ssh {SSH_OPTS} -S /tmp/siranga/{host} {host} {cmd}'
+    cmd = f'ssh {SSH_OPTS} -S /tmp/siranga/{host} {host} {cmd}'
+
     try:
         output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         logger.info(output.decode())
