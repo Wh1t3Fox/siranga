@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.completion import WordCompleter, PathCompleter
 from prompt_toolkit.styles import Style
 import sys
 
@@ -38,7 +38,7 @@ dis_completer = NestedCompleter({
 conn_completer = NestedCompleter({
     '!disconnect': None,
     '!get': None,
-    '!put': None,
+    '!put': PathCompleter(),
     '!shell': None,
     '!-D': None,
     '!-L': None,

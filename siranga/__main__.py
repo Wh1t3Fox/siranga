@@ -23,13 +23,14 @@ def connect(host):
     
     global ACTIVE_CONNECTIONS
     global ACTIVE_CONNECTION
-    logger.info(f'connect: {host}')
+
     if len(host.split()) != 1:
         logger.error(connect.__doc__)
         return
 
     # Create SSH connection
-    socket_create(host)
+    if not socket_create(host):
+        return
 
     # TODO: figure out handling jumps
     ACTIVE_CONNECTION = host
@@ -57,15 +58,41 @@ def kill(host):
         logger.error(connect.__doc__)
         return
     del ACTIVE_CONNECTIONS[host]
-    # kill here
 
+    # TODO: Validate socket is gone
     socket_cmd('exit', host)
 
-def port_forward(host):
-    logger.info(f'port_f: {host}')
+def port_forward(cmd, opts):
+    '''
+    Open ports for tunneling
+    Usage:
+        !-D <port> - setup socks proxy
+        !-L <port>:<host>:<port> - local port forward
+        !-R <port>:<host>:<port> - Open reverse tunnel
+        !-K <port>:<host>:<port> - stop forwarding
+    '''
+    logger.info(f'port_f: {cmd} {opts}')
+    if len(opts.split()) != 1:
+        logger.error(port_forward.__doc__)
+        return
 
-def transfer_file(local_path, remote_path):
-    logger.info(f'transfer: {local_path} {remote_path}')
+
+def transfer_file(direction, args):
+    '''
+    Recursively transfer file/folder
+    Usage:
+        !get <remote_path>
+        !put <local_path> <remote_path>
+    '''
+    logger.info(f'transfer: {direction} {args}')
+    if len(opts.split()) != 2:
+        logger.error(transfer_file.__doc__)
+        return
+
+    if cmd == 'get':
+        pass
+    elif cmd == 'put':
+        pass
 
 def interactive_shell():
     # https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
@@ -114,6 +141,10 @@ def main():
                         disconnect()
                     elif command == 'shell':
                         interactive_shell()
+                    elif command in ['-D', '-K', '-L', '-R']:
+                        port_forward(cmd, args)
+                    elif command in ['get', 'put']:
+                        transfer_file(command, args)
                 else:
                     if command in ['exit', 'quit']:
                         sys.exit(0)
