@@ -5,8 +5,9 @@ import logging
 import logging.config
 import sys
 
-CONNECTIONS = dict()
+ACTIVE_CONNECTIONS = dict()
 ACTIVE_CONNECTION = None
+HOSTS = list()
 
 logging.config.dictConfig({
     'version': 1,

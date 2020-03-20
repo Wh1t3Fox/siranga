@@ -8,7 +8,7 @@ from prompt_toolkit import PromptSession
 import logging
 logger = logging.getLogger(__name__)
 
-from siranga import ACTIVE_CONNECTION
+from siranga import ACTIVE_CONNECTIONS
 from siranga.config import *
 
 class Prompt(object):
@@ -21,31 +21,33 @@ class Prompt(object):
             auto_suggest=AutoSuggestFromHistory(),
             enable_history_search=True,)
         self.prompt = self.hosts
+        self.active_host = None
 
     @property
     def prompt(self):
         return self.__prompt
 
     @prompt.setter
-    def prompt(self, hosts):
+    def prompt(self, host):
         self.__prompt = []
         self.__prompt.append(('class:username', 'siranga'))
 
-        if hosts:
-            if len(hosts) == 2:
-                self.__prompt.append(('class:jump', '['))
-                for jump in hosts[1]:
-                    self.__prompt.append(('class:jumpp', ' → {jump} → '))
-                self.__prompt.append(('class:jump', ']'))
-            self.__prompt.append(('class:host', f' ({hosts[0]})'))
-            
-        else:
-            self.completer = dis_completer
+        if host:
+            try:
+                if len(ACTIVE_CONNECTIONS[host]):
+                    self.__prompt.append(('class:jump', '['))
+                    for jump in ACTIVE_CONNECTIONS[host]:
+                        self.__prompt.append(('class:jumpp', ' → {jump} → '))
+                    self.__prompt.append(('class:jump', ']'))
+            except KeyError:
+                pass
+            self.__prompt.append(('class:host', f' ({host})'))
 
         self.__prompt.append(('class:arrow', ' → '))
+        self.active_host = host
 
     def show(self):
-        if ACTIVE_CONNECTION:
+        if self.active_host:
             completer = conn_completer
         else:
             completer = dis_completer

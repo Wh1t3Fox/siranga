@@ -6,6 +6,16 @@ from prompt_toolkit.styles import Style
 import sys
 
 from siranga.nested import NestedCompleter
+from siranga import ACTIVE_CONNECTION, ACTIVE_CONNECTIONS, HOSTS
+
+SSH_CONFIG_PATH = '~/.ssh/config'
+
+SSH_OPTS = '-o ControlMaster=auto' \
+    ' -o Compression=yes' \
+    ' -o ForwardX11=yes' \
+    ' -o UserKnownHostsFile=/dev/null' \
+    ' -o StrictHostKeyChecking=no' \
+    ' -o LogLevel=ERROR'
 
 style = Style.from_dict({
     # User input (default text).
@@ -19,9 +29,10 @@ style = Style.from_dict({
 })
 
 dis_completer = NestedCompleter({
-    '!connect': WordCompleter([]),
-    '!hosts': None,
-    '!exit': lambda x: sys.exit(0),
+    '!connect': WordCompleter(HOSTS),
+    '!active': None,
+    '!kill': WordCompleter(ACTIVE_CONNECTIONS.keys()),
+    '!exit': None,
 })
 
 conn_completer = NestedCompleter({

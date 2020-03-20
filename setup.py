@@ -28,13 +28,13 @@ setup(
     ],
     keywords='ssh',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['colorama', 'prompt_toolkit', 'termcolor'],
+    install_requires=['prompt_toolkit', 'sshconf'],
     extras_require={
         'dev': ['ipython','pytest'],
     },
     entry_points={
         'console_scripts': [
-            'siranga = siranga.siranga:main',
+            'siranga = siranga.__main__:main',
         ],
     },
     include_package_data = True,
