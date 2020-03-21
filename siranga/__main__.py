@@ -32,8 +32,10 @@ def connect(host):
     if not socket_create(host):
         return
 
-    ACTIVE_CONNECTION = host
-    ACTIVE_CONNECTIONS[host] = []
+    # lookup host infos
+    identity = host_lookup(host)
+    ACTIVE_CONNECTION = identity
+    ACTIVE_CONNECTIONS.append(identity)
 
 def disconnect():
     '''
@@ -52,14 +54,20 @@ def kill(host):
         !kill <host>
     '''
     global ACTIVE_CONNECTIONS
+
     if len(host.split()) != 1:
         logger.error(connect.__doc__)
         return
-    del ACTIVE_CONNECTIONS[host]
 
     socket_cmd(host, 'exit')
     if os.path.exists(f'{SOCKET_PATH}/{host}'):
         logger.error('Problem killing connection')
+
+    for i, ident in enumerate(ACTIVE_CONNECTIONS):
+        if host == host_lookup(host).name:
+            del ACTIVE_CONNECTIONS[i]
+            break
+
 
 def port_forward(cmd, opts):
     '''
@@ -204,11 +212,11 @@ def main():
                     elif command == 'connect':
                         connect(args)
                     elif command == 'active':
-                        logger.info('\n'.join(ACTIVE_CONNECTIONS.keys()))
+                        logger.info('\n'.join([x.name for x in ACTIVE_CONNECTIONS]))
                     elif command == 'kill':
                         kill(args)
                     elif command == 'hosts':
-                        logger.info('\n'.join(CONNECTIONS.keys()))
+                        logger.info('\n'.join([x.name for x in HOSTS]))
 
 
         except (KeyboardInterrupt, EOFError) as e:

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging 
+import logging
 import logging.config
 import sys
 
-ACTIVE_CONNECTIONS = dict()
+ACTIVE_CONNECTIONS = list()
 ACTIVE_CONNECTION = None
 HOSTS = list()
 

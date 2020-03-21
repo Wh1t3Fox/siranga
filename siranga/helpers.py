@@ -12,13 +12,18 @@ logger = logging.getLogger(__name__)
 from siranga import HOSTS
 from siranga.config import *
 
+def host_lookup(name):
+    for ident in HOSTS:
+        if name == ident.name:
+            return ident
+
 def load_config():
     if not path.isfile(expanduser(SSH_CONFIG_PATH)):
         return
 
     cfg = SSHConfig.load(expanduser(SSH_CONFIG_PATH))
     for host in cfg:
-        HOSTS.append(host.name)
+        HOSTS.append(host)
 
 def socket_create(host):
     if not os.path.exists(SOCKET_PATH):

@@ -6,7 +6,7 @@ from prompt_toolkit.styles import Style
 import sys
 
 from siranga.nested import NestedCompleter
-from siranga import ACTIVE_CONNECTION, ACTIVE_CONNECTIONS, HOSTS
+from siranga import ACTIVE_CONNECTIONS, HOSTS
 
 SSH_CONFIG_PATH = '~/.ssh/config'
 SOCKET_PATH = '/tmp/siranga'
@@ -27,23 +27,5 @@ style = Style.from_dict({
     'jump':     '#81a2be',
     'arrow':    '#cc6666',
     'host':     '#b4b7b4',
-})
-
-dis_completer = NestedCompleter({
-    '!connect': WordCompleter(HOSTS),
-    '!active': None,
-    '!kill': WordCompleter(ACTIVE_CONNECTIONS.keys()),
-    '!exit': None,
-})
-
-conn_completer = NestedCompleter({
-    '!disconnect': None,
-    '!get': None,
-    '!put': PathCompleter(),
-    '!shell': None,
-    '!-D': None,
-    '!-L': None,
-    '!-R': None,
-    '!-K': None,
 })
 

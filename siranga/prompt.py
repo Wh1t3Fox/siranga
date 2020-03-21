@@ -8,7 +8,7 @@ from prompt_toolkit import PromptSession
 import logging
 logger = logging.getLogger(__name__)
 
-from siranga import ACTIVE_CONNECTIONS
+from siranga import ACTIVE_CONNECTIONS, HOSTS
 from siranga.config import *
 
 class Prompt(object):
@@ -33,24 +33,33 @@ class Prompt(object):
         self.__prompt.append(('class:username', 'siranga'))
 
         if host:
-            try:
-                if len(ACTIVE_CONNECTIONS[host]):
-                    self.__prompt.append(('class:jump', '['))
-                    for jump in ACTIVE_CONNECTIONS[host]:
-                        self.__prompt.append(('class:jumpp', ' → {jump} → '))
-                    self.__prompt.append(('class:jump', ']'))
-            except KeyError:
-                pass
-            self.__prompt.append(('class:host', f' ({host})'))
+            self.__prompt.append(('class:host', f' ({host.name})'))
 
         self.__prompt.append(('class:arrow', ' → '))
         self.active_host = host
 
     def show(self):
         if self.active_host:
-            completer = conn_completer
+            completer = NestedCompleter({
+                '!disconnect': None,
+                '!get': None,
+                '!put': PathCompleter(),
+                '!shell': None,
+                '!-D': None,
+                '!-L': None,
+                '!-R': None,
+                '!-K': None,
+            })
         else:
-            completer = dis_completer
+            inactive = [x.name for x in HOSTS]
+            active = [x.name for x in ACTIVE_CONNECTIONS]
+            completer = NestedCompleter({
+                '!connect': WordCompleter(inactive),
+                '!hosts': None,
+                '!active': None,
+                '!kill': WordCompleter(active),
+                '!exit': None,
+            })
 
         return self._session.prompt(self.__prompt, completer=completer, style=style)
 
