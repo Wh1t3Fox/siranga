@@ -1,2 +1,2 @@
-# krymmenos
+# siranga
 SSH utility
