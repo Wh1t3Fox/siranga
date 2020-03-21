@@ -22,6 +22,7 @@ class Prompt(object):
             enable_history_search=True,)
         self.prompt = self.hosts
         self.active_host = None
+        self.completer = None
 
     @property
     def prompt(self):
@@ -40,7 +41,7 @@ class Prompt(object):
 
     def show(self):
         if self.active_host:
-            completer = NestedCompleter({
+            self.completer = NestedCompleter({
                 '!disconnect': None,
                 '!get': None,
                 '!put': PathCompleter(),
@@ -53,14 +54,15 @@ class Prompt(object):
         else:
             inactive = [x.name for x in HOSTS]
             active = [x.name for x in ACTIVE_CONNECTIONS]
-            completer = NestedCompleter({
+            self.completer = NestedCompleter({
                 '!connect': WordCompleter(inactive),
                 '!hosts': None,
                 '!active': None,
+                '!set': WordCompleter(inactive),
                 '!kill': WordCompleter(active),
                 '!exit': None,
             })
 
-        return self._session.prompt(self.__prompt, completer=completer, style=style)
+        return self._session.prompt(self.__prompt, completer=self.completer, style=style)
 
 

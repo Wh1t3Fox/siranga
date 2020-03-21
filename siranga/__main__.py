@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from ssh_config import SSHConfig, Host
+from prettytable import PrettyTable
+from os.path import expanduser
 import subprocess
 import argparse
 import logging
@@ -173,9 +176,60 @@ def get_active():
         ACTIVE_CONNECTIONS = []
         return # no active
 
+def set_host(args):
+    '''
+    Add/Modify ssh_config entry
+    Usage:
+        Update Field:
+            !set <host> <field_name> <value>
+        Add Entry:
+            !set <host> <hostname> <user> <port>
+    '''
+    global HOSTS
+    config = SSHConfig.load(expanduser(SSH_CONFIG_PATH))
+    field_names = ['Host', 'HostName', 'User', 'Port', 'IdentityFile', 'ProxyJump']
+
+    # print out current hosts
+    if not args:
+        table = PrettyTable()
+        table.field_names = field_names
+        table.border = False
+        table.align = 'l'
+
+        for host in config:
+            table.add_row([host.name, host.HostName, host.User, host.Port, host.IdentityFile, host.ProxyJump])
+        logger.info(table)
+        return
+
+    current_hosts = [host.name for host in config]
+
+    args = list(map(lambda x: x.strip(), args.split()))
+    # update entry
+    if args[0] in current_hosts and len(args) == 3:
+        if args[1] not in field_names:
+            logger.error('Use Designated Field Names')
+            logger.error(set_host.__doc__)
+            return
+        config.update(args[0], {args[1]: args[2]})
+    # add entry
+    elif args[0] not in current_hosts and len(args) == 4:
+        new_host = Host(args[0], {
+                'HostName': args[1],
+                'User': args[2],
+                'Port': args[3]
+            })
+        config.append(new_host)
+    # invalid
+    else:
+        logger.error(set_host.__doc__)
+        return
+
+    config.write()
+    load_config()
 
 def main():
     global ACTIVE_CONNECTIONS
+    global HOSTS
 
     load_config()
 
@@ -200,7 +254,7 @@ def main():
                     except:
                         pass
                 else:
-                    valid_cmds = '\n\t'.join(dis_completer.options.keys())
+                    valid_cmds = '\n\t'.join(prompt.completer.options.keys())
                     logger.error(f'Valid commands are: {chr(10)}{chr(9)}{valid_cmds}')
                     continue
             else:
@@ -229,6 +283,8 @@ def main():
                         get_active()
                     elif command == 'kill':
                         kill(args)
+                    elif command == 'set':
+                        set_host(args)
                     elif command == 'hosts':
                         logger.info('\n'.join([x.name for x in HOSTS]))
 

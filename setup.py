@@ -28,7 +28,7 @@ setup(
     ],
     keywords='ssh',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['prompt_toolkit', 'ssh-config'],
+    install_requires=['prompt_toolkit', 'ssh-config', 'prettytable'],
     extras_require={
         'dev': ['ipython','pytest'],
     },

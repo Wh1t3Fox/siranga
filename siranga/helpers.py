@@ -18,11 +18,11 @@ def host_lookup(name):
             return ident
 
 def load_config():
+    del HOSTS[:]
     if not path.isfile(expanduser(SSH_CONFIG_PATH)):
         return
 
-    cfg = SSHConfig.load(expanduser(SSH_CONFIG_PATH))
-    for host in cfg:
+    for host in SSHConfig.load(expanduser(SSH_CONFIG_PATH)):
         HOSTS.append(host)
 
 def socket_create(host):
