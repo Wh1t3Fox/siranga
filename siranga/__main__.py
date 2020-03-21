@@ -3,7 +3,6 @@
 
 from ssh_config import SSHConfig, Host
 from prettytable import PrettyTable
-from os.path import expanduser
 import subprocess
 import argparse
 import logging
@@ -118,7 +117,7 @@ def transfer_file(direction, args):
 
         path = paths[0]
 
-        local_path = expanduser(f'~/Downloads/{ACTIVE_CONNECTION.name}{path}')
+        local_path = f'{OUTPUT_PATH}/downloads/{ACTIVE_CONNECTION.name}{path}'
         if not os.path.exists(local_path):
            os.makedirs(local_path)
 
@@ -136,9 +135,10 @@ def transfer_file(direction, args):
         command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION.name} {from_path} {ACTIVE_CONNECTION.name}:{to_path}'
 
     try:
-       subprocess.call(command, shell=True)
+        logger.debug(command)
+        subprocess.call(command, shell=True)
     except Exception as e:
-        logger.error(e)
+        logger.error(str(e))
 
 def interactive_shell():
     # https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
@@ -161,6 +161,7 @@ def interactive_shell():
         logger.error('TBD')
         return
 
+    logger.debug(command)
     subprocess.call(command, shell=True)
 
     subprocess.call(f'stty {orig_tty.decode()}'.split())
@@ -186,7 +187,7 @@ def set_host(args):
             !set <host> <hostname> <user> <port>
     '''
     global HOSTS
-    config = SSHConfig.load(expanduser(SSH_CONFIG_PATH))
+    config = SSHConfig.load(SSH_CONFIG_PATH)
     field_names = ['Host', 'HostName', 'User', 'Port', 'IdentityFile', 'ProxyJump']
 
     # print out current hosts

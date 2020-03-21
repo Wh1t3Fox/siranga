@@ -32,6 +32,7 @@ def socket_create(host):
     command = f'ssh -fN {SSH_OPTS} -S {SOCKET_PATH}/{host} {host}'
 
     try:
+        logger.debug(command)
         subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     except:
@@ -47,6 +48,7 @@ def socket_cmd(host, request, cmd=''):
     command = f'ssh -O {request} {cmd} -S {SOCKET_PATH}/{host} {host}'
 
     try:
+        logger.debug(command)
         subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     except Exception as e:
@@ -55,11 +57,12 @@ def socket_cmd(host, request, cmd=''):
 def execute(cmd, host=''):
     # Chwck socket
 
-    cmd = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} {cmd}'
+    command = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} {cmd}'
 
     try:
-        output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+        logger.debug(command)
+        output = subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
         logger.info(output.decode())
         return output
     except Exception as e:
-        logger.error(e)
+        logger.error(f'{cmd: {str(e)}}')

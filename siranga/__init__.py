@@ -4,10 +4,15 @@
 import logging
 import logging.config
 import sys
+import os
+
 
 ACTIVE_CONNECTIONS = list()
 ACTIVE_CONNECTION = None
 HOSTS = list()
+
+from siranga.config import OUTPUT_PATH
+os.makedirs(OUTPUT_PATH)
 
 logging.config.dictConfig({
     'version': 1,
@@ -18,15 +23,20 @@ logging.config.dictConfig({
         },
     },
     'handlers': {
-        'default': {
+        'screen': {
             'level':'INFO',
             'class':'logging.StreamHandler',
         },
+        'file' :{
+            'level':'DEBUG',
+            'class':'logging.FileHandler',
+            'filename': f'{OUTPUT_PATH}/siranga.log'
+        }
     },
     'loggers': {
         '': {
-            'handlers': ['default'],
-            'level': 'INFO',
+            'handlers': ['screen', 'file'],
+            'level': 'DEBUG',
             'propagate': True
         }
     }

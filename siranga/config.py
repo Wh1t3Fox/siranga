@@ -3,12 +3,14 @@
 
 from prompt_toolkit.completion import WordCompleter, PathCompleter
 from prompt_toolkit.styles import Style
+from os.path import expanduser
 import sys
 
 from siranga.nested import NestedCompleter
 from siranga import ACTIVE_CONNECTIONS, HOSTS
 
-SSH_CONFIG_PATH = '~/.ssh/config'
+SSH_CONFIG_PATH = expanduser('~/.ssh/config')
+OUTPUT_PATH = expanduser('~/siranga')
 SOCKET_PATH = '/tmp/siranga'
 
 SSH_OPTS = '-o ControlMaster=auto' \
