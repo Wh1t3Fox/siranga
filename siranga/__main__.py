@@ -102,14 +102,23 @@ def transfer_file(direction, args):
             return
 
 
-    if cmd == 'get':
+    if direction == 'get':
         if len(paths) != 1:
             logger.info(transfer_file.__doc__)
             return
 
-        logger.info(f'GET {paths}')
+        path = paths[0]
 
-    elif cmd == 'put':
+        local_path = f'{os.getcwd()}/download/{ACTIVE_CONNECTION}{path}'
+        if not os.path.exists(local_path):
+           os.makedirs(local_path)
+
+        logger.info(f'Downloading to {local_path}')
+
+        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION} {ACTIVE_CONNECTION}:{path} {local_path}'
+        subprocess.call(command, shell=True)
+
+    elif direction == 'put':
         if len(paths) != 2:
             logger.info(transfer_file.__doc__)
             return
@@ -118,6 +127,8 @@ def transfer_file(direction, args):
 
         logger.info(f'FROM {from_path} TO {to_path}')
 
+        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION} {from_path} {ACTIVE_CONNECTION}:{to_path}'
+        subprocess.call(command, shell=True)
 
 def interactive_shell():
     # https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
