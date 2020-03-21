@@ -55,6 +55,6 @@ def execute(cmd, host=''):
     try:
         output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         logger.info(output.decode())
+        return output
     except:
         pass
-

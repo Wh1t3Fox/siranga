@@ -32,7 +32,6 @@ def connect(host):
     if not socket_create(host):
         return
 
-    # TODO: figure out handling jumps
     ACTIVE_CONNECTION = host
     ACTIVE_CONNECTIONS[host] = []
 
@@ -92,7 +91,6 @@ def transfer_file(direction, args):
         !get <remote_path>
         !put <local_path> <remote_path>
     '''
-    logger.info(f'transfer: {direction} {args}')
 
     # specify full paths -- less work ;)
     paths = args.split()
@@ -114,9 +112,7 @@ def transfer_file(direction, args):
            os.makedirs(local_path)
 
         logger.info(f'Downloading to {local_path}')
-
         command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION} {ACTIVE_CONNECTION}:{path} {local_path}'
-        subprocess.call(command, shell=True)
 
     elif direction == 'put':
         if len(paths) != 2:
@@ -126,9 +122,12 @@ def transfer_file(direction, args):
         from_path, to_path = paths
 
         logger.info(f'FROM {from_path} TO {to_path}')
-
         command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION} {from_path} {ACTIVE_CONNECTION}:{to_path}'
-        subprocess.call(command, shell=True)
+
+    try:
+       subprocess.call(command, shell=True)
+    except Exception as e:
+        logger.error(e)
 
 def interactive_shell():
     # https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
@@ -138,7 +137,18 @@ def interactive_shell():
     rows = int(tty_val[1].split()[-1])
     columns = int(tty_val[2].split()[-1])
 
-    command = f'stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ["TERM"]}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} {ACTIVE_CONNECTION} "python -c \'import pty;pty.spawn(\\\"/bin/bash\\\");exit()\'"'
+    command = f'stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ["TERM"]}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} {ACTIVE_CONNECTION} '
+    # Pre-checks
+    # python ?
+    if execute('python -V').find(b'command not found') == -1:
+        command += '"python -c \'import pty;pty.spawn(\\\"/bin/bash\\\");exit()\'"'
+    # python3 ?
+    elif execute('python3 -V').find(b'command not found') == -1:
+        command += '"python3 -c \'import pty;pty.spawn(\\\"/bin/bash\\\");exit()\'"'
+    else:
+        # now wut?
+        logger.error('TBD')
+        return
 
     subprocess.call(command, shell=True)
 
@@ -147,13 +157,14 @@ def interactive_shell():
 def main():
     global ACTIVE_CONNECTIONS
 
+    load_config()
+
     try:
         for host in os.listdir(SOCKET_PATH):
             ACTIVE_CONNECTIONS[host] = []
     except FileNotFoundError:
         pass
 
-    load_config()
 
     prompt = Prompt()
 
