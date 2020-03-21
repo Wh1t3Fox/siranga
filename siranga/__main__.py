@@ -162,6 +162,18 @@ def interactive_shell():
 
     subprocess.call(f'stty {orig_tty.decode()}'.split())
 
+def get_active():
+    global ACTIVE_CONNECTIONS
+
+    try:
+        active_connects = [host_lookup(x) for x in os.listdir(SOCKET_PATH)]
+        ACTIVE_CONNECTIONS = list(set(active_connects) & set(ACTIVE_CONNECTIONS))
+        logger.info('\n'.join(x.name for x in ACTIVE_CONNECTIONS))
+    except FileNotFoundError:
+        ACTIVE_CONNECTIONS = []
+        return # no active
+
+
 def main():
     global ACTIVE_CONNECTIONS
 
@@ -169,7 +181,9 @@ def main():
 
     try:
         for host in os.listdir(SOCKET_PATH):
-            ACTIVE_CONNECTIONS[host] = []
+            ident = host_lookup(host)
+            if host == ident.name:
+                ACTIVE_CONNECTIONS.append(ident)
     except FileNotFoundError:
         pass
 
@@ -212,7 +226,7 @@ def main():
                     elif command == 'connect':
                         connect(args)
                     elif command == 'active':
-                        logger.info('\n'.join([x.name for x in ACTIVE_CONNECTIONS]))
+                        get_active()
                     elif command == 'kill':
                         kill(args)
                     elif command == 'hosts':
