@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from sshconf import read_ssh_config, empty_ssh_config
+from ssh_config import SSHConfig
 from os.path import expanduser
 from os import path
 import os
@@ -16,9 +16,9 @@ def load_config():
     if not path.isfile(expanduser(SSH_CONFIG_PATH)):
         return
 
-    cfg = read_ssh_config(expanduser(SSH_CONFIG_PATH))
-    for host in cfg.hosts():
-        HOSTS.append(host)
+    cfg = SSHConfig.load(expanduser(SSH_CONFIG_PATH))
+    for host in cfg:
+        HOSTS.append(host.name)
 
 def socket_create(host):
     if not os.path.exists(SOCKET_PATH):
