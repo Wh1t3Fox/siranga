@@ -177,6 +177,10 @@ def main():
                         execute(command, ACTIVE_CONNECTION)
                     except:
                         pass
+                else:
+                    valid_cmds = '\n\t'.join(dis_completer.options.keys())
+                    logger.error(f'Valid commands are: {chr(10)}{chr(9)}{valid_cmds}')
+                    continue
             else:
                 command = command[1:].split()
                 if len(command) > 1:

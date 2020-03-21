@@ -15,9 +15,9 @@ RUN apt-get update && apt-get upgrade -y && \
  echo 'LANG=en_US.UTF-8' > /etc/locale.conf && \
  useradd -m -s /bin/bash user
 
-COPY --chown=user:user . /tmp/siranga
+COPY --chown=user:user . /tmp/code
 
-RUN cd /tmp/siranga && pip3 install -e .
+RUN cd /tmp/code && pip3 install -e .
 
 WORKDIR /home/user
 USER user
