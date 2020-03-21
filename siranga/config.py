@@ -9,6 +9,7 @@ from siranga.nested import NestedCompleter
 from siranga import ACTIVE_CONNECTION, ACTIVE_CONNECTIONS, HOSTS
 
 SSH_CONFIG_PATH = '~/.ssh/config'
+SOCKET_PATH = '/tmp/siranga'
 
 SSH_OPTS = '-o ControlMaster=auto' \
     ' -o Compression=yes' \

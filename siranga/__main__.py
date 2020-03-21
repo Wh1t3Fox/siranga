@@ -8,8 +8,8 @@ import sys
 import os
 
 from siranga import ACTIVE_CONNECTION, ACTIVE_CONNECTIONS, HOSTS
-from siranga.config import SSH_OPTS
 from siranga.prompt import Prompt
+from siranga.config import *
 from siranga.helpers import *
 
 logger = logging.getLogger(__name__)
@@ -52,15 +52,15 @@ def kill(host):
     Usage:
         !kill <host>
     '''
-    logger.info(f'kill: {host}')
     global ACTIVE_CONNECTIONS
     if len(host.split()) != 1:
         logger.error(connect.__doc__)
         return
     del ACTIVE_CONNECTIONS[host]
 
-    # TODO: Validate socket is gone
-    socket_cmd('exit', host)
+    socket_cmd(host, 'exit')
+    if os.path.exists(f'{SOCKET_PATH}/{host}'):
+        logger.error('Problem killing connection')
 
 def port_forward(cmd, opts):
     '''
@@ -93,14 +93,31 @@ def transfer_file(direction, args):
         !put <local_path> <remote_path>
     '''
     logger.info(f'transfer: {direction} {args}')
-    if len(opts.split()) != 2:
-        logger.error(transfer_file.__doc__)
-        return
+
+    # specify full paths -- less work ;)
+    paths = args.split()
+    for path in paths:
+        if not path.startswith('/'):
+            logger.error('Must specify full path')
+            return
+
 
     if cmd == 'get':
-        pass
+        if len(paths) != 1:
+            logger.info(transfer_file.__doc__)
+            return
+
+        logger.info(f'GET {paths}')
+
     elif cmd == 'put':
-        pass
+        if len(paths) != 2:
+            logger.info(transfer_file.__doc__)
+            return
+
+        from_path, to_path = paths
+
+        logger.info(f'FROM {from_path} TO {to_path}')
+
 
 def interactive_shell():
     # https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
@@ -117,6 +134,13 @@ def interactive_shell():
     subprocess.call(f'stty {orig_tty.decode()}'.split())
 
 def main():
+    global ACTIVE_CONNECTIONS
+
+    try:
+        for host in os.listdir(SOCKET_PATH):
+            ACTIVE_CONNECTIONS[host] = []
+    except FileNotFoundError:
+        pass
 
     load_config()
 

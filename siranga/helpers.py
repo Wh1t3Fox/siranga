@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from siranga import HOSTS
-from siranga.config import SSH_CONFIG_PATH, SSH_OPTS
+from siranga.config import *
 
 def load_config():
     if not path.isfile(expanduser(SSH_CONFIG_PATH)):
@@ -21,10 +21,10 @@ def load_config():
         HOSTS.append(host)
 
 def socket_create(host):
-    if not os.path.exists('/tmp/siranga'):
-        os.makedirs('/tmp/siranga')
+    if not os.path.exists(SOCKET_PATH):
+        os.makedirs(SOCKET_PATH)
 
-    command = f'ssh -fN {SSH_OPTS} -S /tmp/siranga/{host} {host}'
+    command = f'ssh -fN {SSH_OPTS} -S {SOCKET_PATH}/{host} {host}'
 
     try:
         subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -39,7 +39,7 @@ def socket_cmd(host, request, cmd=''):
     # cancel - forwardings
     # exit - request the master to exit
     # stop - request the master to stop accepting further multiplexing requests
-    command = f'ssh -O {request} {cmd} -S /tmp/siranga/{host} {host}'
+    command = f'ssh -O {request} {cmd} -S {SOCKET_PATH}/{host} {host}'
 
     try:
         subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -50,7 +50,7 @@ def socket_cmd(host, request, cmd=''):
 def execute(cmd, host=''):
     # Chwck socket
 
-    cmd = f'ssh {SSH_OPTS} -S /tmp/siranga/{host} {host} {cmd}'
+    cmd = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} {cmd}'
 
     try:
         output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
