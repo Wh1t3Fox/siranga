@@ -118,7 +118,7 @@ def transfer_file(direction, args):
 
         path = paths[0]
 
-        local_path = f'{os.getcwd()}/download/{ACTIVE_CONNECTION.name}{path}'
+        local_path = expanduser(f'~/Downloads/{ACTIVE_CONNECTION.name}{path}')
         if not os.path.exists(local_path):
            os.makedirs(local_path)
 
