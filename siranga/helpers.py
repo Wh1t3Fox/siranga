@@ -61,5 +61,5 @@ def execute(cmd, host=''):
         output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         logger.info(output.decode())
         return output
-    except:
-        pass
+    except Exception as e:
+        logger.error(e)

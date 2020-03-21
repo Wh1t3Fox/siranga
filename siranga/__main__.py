@@ -85,14 +85,14 @@ def port_forward(cmd, opts):
         logger.error(port_forward.__doc__)
         return
 
-    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
+    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
         logger.error('No active connection')
         return
 
     if cmd == '-K':
-        socket_cmd(ACTIVE_CONNECTION, 'cancel', opts)
+        socket_cmd(ACTIVE_CONNECTION.name, 'cancel', opts)
     else:
-        socket_cmd(ACTIVE_CONNECTION, 'forward', f'{cmd} {opts}')
+        socket_cmd(ACTIVE_CONNECTION.name, 'forward', f'{cmd} {opts}')
 
 
 def transfer_file(direction, args):
@@ -118,12 +118,12 @@ def transfer_file(direction, args):
 
         path = paths[0]
 
-        local_path = f'{os.getcwd()}/download/{ACTIVE_CONNECTION}{path}'
+        local_path = f'{os.getcwd()}/download/{ACTIVE_CONNECTION.name}{path}'
         if not os.path.exists(local_path):
            os.makedirs(local_path)
 
         logger.info(f'Downloading to {local_path}')
-        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION} {ACTIVE_CONNECTION}:{path} {local_path}'
+        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION.name} {ACTIVE_CONNECTION.name}:{path} {local_path}'
 
     elif direction == 'put':
         if len(paths) != 2:
@@ -133,7 +133,7 @@ def transfer_file(direction, args):
         from_path, to_path = paths
 
         logger.info(f'FROM {from_path} TO {to_path}')
-        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION} {from_path} {ACTIVE_CONNECTION}:{to_path}'
+        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION.name} {from_path} {ACTIVE_CONNECTION.name}:{to_path}'
 
     try:
        subprocess.call(command, shell=True)
@@ -148,7 +148,7 @@ def interactive_shell():
     rows = int(tty_val[1].split()[-1])
     columns = int(tty_val[2].split()[-1])
 
-    command = f'stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ["TERM"]}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} {ACTIVE_CONNECTION} '
+    command = f'stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ["TERM"]}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} {ACTIVE_CONNECTION.name} '
     # Pre-checks
     # python ?
     if execute('python -V').find(b'command not found') == -1:
@@ -250,9 +250,9 @@ def main():
             if not command.startswith('!'):
                 if ACTIVE_CONNECTION:
                     try:
-                        execute(command, ACTIVE_CONNECTION)
-                    except:
-                        pass
+                        execute(command, ACTIVE_CONNECTION.name)
+                    except Exception as e:
+                        logger.error(e)
                 else:
                     valid_cmds = '\n\t'.join(prompt.completer.options.keys())
                     logger.error(f'Valid commands are: {chr(10)}{chr(9)}{valid_cmds}')
