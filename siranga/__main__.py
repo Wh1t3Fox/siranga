@@ -191,8 +191,7 @@ def set_host(args):
     try:
         config = SSHConfig.load(SSH_CONFIG_PATH)
     except ssh_config.client.EmptySSHConfig:
-        logger.error(set_host.__doc__)
-        return
+        pass
 
     # print out current hosts
     if not args:
