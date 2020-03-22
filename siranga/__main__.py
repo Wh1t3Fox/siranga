@@ -294,7 +294,7 @@ def main():
                     elif command == 'set':
                         set_host(args)
                     elif command == 'hosts':
-                        logger.info('\n'.join([x.name for x in HOSTS]))
+                        set_host('')
 
 
         except (KeyboardInterrupt, EOFError) as e:
