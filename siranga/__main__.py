@@ -188,7 +188,6 @@ def set_host(args):
     '''
     global HOSTS
     config = SSHConfig.load(SSH_CONFIG_PATH)
-    field_names = ['Host', 'HostName', 'User', 'Port', 'IdentityFile', 'ProxyJump']
 
     # print out current hosts
     if not args:

@@ -9,20 +9,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 from siranga import ACTIVE_CONNECTIONS, HOSTS
+from siranga.helpers import host_lookup
 from siranga.config import *
 
 class Prompt(object):
 
     def __init__(self, hosts=None):
         self.hosts = hosts
+        self.jumps = list()
+        self.prompt = self.hosts
+        self.active_host = None
+        self.completer = None
         self._prompt_history = InMemoryHistory()
         self._session = PromptSession(
             history = self._prompt_history,
             auto_suggest=AutoSuggestFromHistory(),
             enable_history_search=True,)
-        self.prompt = self.hosts
-        self.active_host = None
-        self.completer = None
+
+    def get_jumps(self, host):
+        if host.ProxyJump:
+            jump = host.ProxyJump
+            self.jumps.append(jump)
+            self.get_jumps(host_lookup(jump))
 
     @property
     def prompt(self):
@@ -34,7 +42,15 @@ class Prompt(object):
         self.__prompt.append(('class:username', 'siranga'))
 
         if host:
+            self.get_jumps(host)
+            if self.jumps:
+                self.__prompt.append(('class:jump', ' ['))
+                for jump in self.jumps:
+                    self.__prompt.append(('class:jumpp', f'→{jump}'))
+                self.__prompt.append(('class:jump', '→]'))
             self.__prompt.append(('class:host', f' ({host.name})'))
+        else:
+            self.jumps = list()
 
         self.__prompt.append(('class:arrow', ' → '))
         self.active_host = host
