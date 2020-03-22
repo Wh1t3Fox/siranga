@@ -46,7 +46,7 @@ class Prompt(object):
             if self.jumps:
                 self.__prompt.append(('class:jump', ' ['))
                 for jump in self.jumps:
-                    self.__prompt.append(('class:jumpp', f'→{jump}'))
+                    self.__prompt.append(('class:jump', f'→{jump}'))
                 self.__prompt.append(('class:jump', '→]'))
             self.__prompt.append(('class:host', f' ({host.name})'))
         else:
