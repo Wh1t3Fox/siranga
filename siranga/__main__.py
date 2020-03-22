@@ -218,6 +218,10 @@ def set_host(args):
             logger.error('Use Designated Field Names')
             logger.error(set_host.__doc__)
             return
+
+        if args[2].lower() == 'none':
+            args[2] = None
+
         config.update(args[0], {args[1]: args[2]})
     # add entry
     elif args[0] not in current_hosts and len(args) == 4:
