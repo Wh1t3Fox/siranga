@@ -334,6 +334,8 @@ def add_keys():
             logger.error(str(e))
             return
         set_host(f'{ACTIVE_CONNECTION.name} IdentityFile {priv_key}')
+    else:
+        priv_key = ACTIVE_CONNECTION.IdentityFile
 
     # Add key to authorized_keys
     try:
