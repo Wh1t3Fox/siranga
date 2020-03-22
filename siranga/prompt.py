@@ -52,14 +52,16 @@ class Prompt(object):
                 '!-K': None,
             })
         else:
-            inactive = [x.name for x in HOSTS]
-            active = [x.name for x in ACTIVE_CONNECTIONS]
+            _set = {}
+            for host in HOSTS:
+                _set[host.name] = WordCompleter(field_names)
+
             self.completer = NestedCompleter({
-                '!connect': WordCompleter(inactive),
+                '!connect': WordCompleter([x.name for x in HOSTS]),
                 '!hosts': None,
                 '!active': None,
-                '!set': WordCompleter(inactive),
-                '!kill': WordCompleter(active),
+                '!set': NestedCompleter(_set),
+                '!kill': WordCompleter([x.name for x in ACTIVE_CONNECTIONS]),
                 '!exit': None,
             })
 

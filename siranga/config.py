@@ -12,6 +12,7 @@ from siranga import ACTIVE_CONNECTIONS, HOSTS
 SSH_CONFIG_PATH = expanduser('~/.ssh/config')
 OUTPUT_PATH = expanduser('~/siranga')
 SOCKET_PATH = '/tmp/siranga'
+field_names = ['Host', 'HostName', 'User', 'Port', 'IdentityFile', 'ProxyJump']
 
 SSH_OPTS = '-o ControlMaster=auto' \
     ' -o Compression=yes' \
