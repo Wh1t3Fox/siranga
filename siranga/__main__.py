@@ -31,12 +31,16 @@ def connect(host):
         logger.error(connect.__doc__)
         return
 
+    # lookup host infos
+    identity = host_lookup(host)
+    if not identity:
+        logger.error('Invalid Host')
+        return
+
     # Create SSH connection
     if not socket_create(host):
         return
 
-    # lookup host infos
-    identity = host_lookup(host)
     ACTIVE_CONNECTION = identity
     ACTIVE_CONNECTIONS.append(identity)
 

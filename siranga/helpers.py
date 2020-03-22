@@ -18,6 +18,8 @@ def host_lookup(name):
     for ident in HOSTS:
         if name == ident.name:
             return ident
+    else:
+        return None
 
 def load_config():
     del HOSTS[:]
