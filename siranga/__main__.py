@@ -281,10 +281,9 @@ def create_user(user):
         return
 
     # Check if user has perms
-    print(ACTIVE_CONNECTION.User)
     if ACTIVE_CONNECTION.User != 'root':
         if execute('sudo -v', ACTIVE_CONNECTION.name).find(b'non-zero exit status') == -1:
-            logger.error(f'sudo command does exist')
+            logger.error(f'sudo command does not exist')
             return
 
     # Generate password
