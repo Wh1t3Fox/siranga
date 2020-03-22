@@ -43,9 +43,10 @@ def socket_create(host):
 
     try:
         logger.debug(command)
-        subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.call(command.split(), stderr=subprocess.STDOUT)
         return True
-    except:
+    except Exception as e:
+        logger.debug(str(e))
         return False
 
 
@@ -59,9 +60,10 @@ def socket_cmd(host, request, cmd=''):
 
     try:
         logger.debug(command)
-        subprocess.call(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.call(command.split(), stderr=subprocess.STDOUT)
         return True
     except Exception as e:
+        logger.debug(str(e))
         return False
 
 def execute(cmd, host=''):
