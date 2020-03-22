@@ -310,6 +310,40 @@ def create_user(user):
         return
 
 
+def add_keys():
+    '''
+    Generate SSH Keys and upload them
+    '''
+
+    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+        logger.error('No active connection')
+        return
+
+    LOCAL_SSH_DIR = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.name}'
+    if not path.exists(LOCAL_SSH_DIR):
+        os.makedirs(LOCAL_SSH_DIR)
+
+    # Generate keys if we don't have them
+    if not ACTIVE_CONNECTION.IdentityFile:
+        try:
+            priv_key = f'{LOCAL_SSH_DIR}/{ACTIVE_CONNECTION.User}'
+            command = f'ssh-keygen -q -t ed25519 -f {priv_key} -b 4096 -N ""' 
+            logger.debug(command)
+            subprocess.call(command, shell=True)
+        except Exception as e:
+            logger.error(str(e))
+            return
+        set_host(f'{ACTIVE_CONNECTION.name} IdentityFile {priv_key}')
+
+    # Add key to authorized_keys
+    try:
+        command = f'ssh-copy-id -i {priv_key} -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION.name} -o StrictHostKeyChecking=no {ACTIVE_CONNECTION.User}@{ACTIVE_CONNECTION.name}'
+        logger.debug(command)
+        subprocess.call(command, shell=True)
+    except Exception as e:
+        logger.error(str(e))
+        return
+
 def main():
     global ACTIVE_CONNECTIONS
     global HOSTS
@@ -359,6 +393,8 @@ def main():
                         transfer_file(command, args)
                     elif command == 'adduser':
                         create_user(args)
+                    elif command == 'addkey':
+                        add_keys()
                 else:
                     if command in ['exit', 'quit']:
                         sys.exit(0)

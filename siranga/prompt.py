@@ -60,6 +60,7 @@ class Prompt(object):
             self.completer = NestedCompleter({
                 '!disconnect': None,
                 '!adduser': None,
+                '!addkey': None,
                 '!get': None,
                 '!put': PathCompleter(),
                 '!shell': None,
