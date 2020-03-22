@@ -12,7 +12,10 @@ ACTIVE_CONNECTION = None
 HOSTS = list()
 
 from siranga.config import OUTPUT_PATH
-os.makedirs(OUTPUT_PATH)
+try:
+    os.makedirs(OUTPUT_PATH)
+except FileExistsError:
+    pass
 
 logging.config.dictConfig({
     'version': 1,
