@@ -59,6 +59,7 @@ class Prompt(object):
         if self.active_host:
             self.completer = NestedCompleter({
                 '!disconnect': None,
+                '!adduser': None,
                 '!get': None,
                 '!put': PathCompleter(),
                 '!shell': None,

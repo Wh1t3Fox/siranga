@@ -66,15 +66,19 @@ def socket_cmd(host, request, cmd=''):
         logger.debug(str(e))
         return False
 
-def execute(cmd, host=''):
+def execute(cmd, host):
     # Chwck socket
-
-    command = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} {cmd}'
+    output = b''
+    command = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} "{cmd}"'
 
     try:
         logger.debug(command)
-        output = subprocess.check_output(command.split(), stderr=subprocess.STDOUT)
-        logger.info(output.decode())
-        return output
+        out = subprocess.check_output(command, shell=True)
+        logger.info(out.decode())
+
+        output = out
     except Exception as e:
-        logger.error(f'{cmd: {str(e)}}')
+        logger.debug(str(e))
+        output = str(e).encode()
+
+    return output

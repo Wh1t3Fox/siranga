@@ -27,6 +27,4 @@ ENV LC_CTYPE=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 
-VOLUME ["/home/user/.ssh/"]
-
 CMD ["siranga", "-h"]

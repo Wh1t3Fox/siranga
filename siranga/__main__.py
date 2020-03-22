@@ -7,6 +7,8 @@ from prettytable import PrettyTable
 import subprocess
 import argparse
 import logging
+import random
+import string
 import sys
 import os
 
@@ -44,6 +46,7 @@ def connect(host):
     ACTIVE_CONNECTION = identity
     ACTIVE_CONNECTIONS.append(identity)
 
+
 def disconnect():
     '''
     Disconnect from server
@@ -53,6 +56,7 @@ def disconnect():
 
     global ACTIVE_CONNECTION
     ACTIVE_CONNECTION = None
+
 
 def kill(host):
     '''
@@ -66,12 +70,22 @@ def kill(host):
         logger.error(connect.__doc__)
         return
 
+    # lookup host infos
+    identity = host_lookup(host)
+    if not identity:
+        logger.error('Invalid Host')
+        return
+
+    if not socket_cmd(host, 'check'):
+        logger.error('No active connection')
+        return
+
     socket_cmd(host, 'exit')
     if os.path.exists(f'{SOCKET_PATH}/{host}'):
         logger.error('Problem killing connection')
 
     for i, ident in enumerate(ACTIVE_CONNECTIONS):
-        if host == host_lookup(host).name:
+        if host == ident.name:
             del ACTIVE_CONNECTIONS[i]
             break
 
@@ -107,13 +121,16 @@ def transfer_file(direction, args):
         !put <local_path> <remote_path>
     '''
 
+    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+        logger.error('No active connection')
+        return
+
     # specify full paths -- less work ;)
     paths = args.split()
     for path in paths:
         if not path.startswith('/'):
             logger.error('Must specify full path')
             return
-
 
     if direction == 'get':
         if len(paths) != 1:
@@ -145,7 +162,12 @@ def transfer_file(direction, args):
     except Exception as e:
         logger.error(str(e))
 
+
 def interactive_shell():
+    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+        logger.error('No active connection')
+        return
+
     # https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
     # Get rows and columns
     orig_tty = subprocess.check_output(b'stty -g'.split())
@@ -153,14 +175,16 @@ def interactive_shell():
     rows = int(tty_val[1].split()[-1])
     columns = int(tty_val[2].split()[-1])
 
-    command = f'stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ["TERM"]}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} {ACTIVE_CONNECTION.name} '
+    command = f"stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ['TERM']}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH}/{ACTIVE_CONNECTION.name} {ACTIVE_CONNECTION.name} "
     # Pre-checks
     # python ?
-    if execute('python -V').find(b'command not found') == -1:
+    if execute('python -V', ACTIVE_CONNECTION.name).find(b'non-zero exit status') == -1:
         command += '"python -c \'import pty;pty.spawn(\\\"/bin/bash\\\");exit()\'"'
+
     # python3 ?
-    elif execute('python3 -V').find(b'command not found') == -1:
+    elif execute('python3 -V', ACTIVE_CONNECTION.name).find(b'non-zero exit status') == -1:
         command += '"python3 -c \'import pty;pty.spawn(\\\"/bin/bash\\\");exit()\'"'
+
     else:
         # now wut?
         logger.error('TBD')
@@ -170,6 +194,7 @@ def interactive_shell():
     subprocess.call(command, shell=True)
 
     subprocess.call(f'stty {orig_tty.decode()}'.split())
+
 
 def get_active():
     global ACTIVE_CONNECTIONS
@@ -181,6 +206,7 @@ def get_active():
     except FileNotFoundError:
         ACTIVE_CONNECTIONS = []
         return # no active
+
 
 def set_host(args):
     '''
@@ -239,6 +265,52 @@ def set_host(args):
     config.write()
     load_config()
 
+
+def create_user(user):
+    '''
+    Create a new user to login with keys
+    Usage:
+        !adduser <username>
+    '''
+    if len(user.split()) != 1:
+        logger.error(create_user.__doc__)
+        return
+
+    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+        logger.error('No active connection')
+        return
+
+    # Check if user has perms
+    print(ACTIVE_CONNECTION.User)
+    if ACTIVE_CONNECTION.User != 'root':
+        if execute('sudo -v', ACTIVE_CONNECTION.name).find(b'non-zero exit status') == -1:
+            logger.error(f'sudo command does exist')
+            return
+
+    # Generate password
+    passwd = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
+    logger.info(f'Creating user {user} with passowrd {passwd}')
+
+    # Create User
+    # Add to sudoers
+    # Create SSH dir
+    # Copy over keys
+    homedir = f'/dev/shm/.{user}'
+    commands = [
+        f'useradd -lmr -d {homedir} -s /bin/sh {user}',
+        f'yes {passwd} | passwd {user}',
+        f'echo -n \'{user} ALL=(ALL) NOPASSWD:ALL\' >> /etc/sudoers',
+        f'mkdir -p {homedir}/.ssh && chmod 700 {homedir}/.ssh'
+    ]
+    try:
+        for command in commands:
+            logging.debug(command)
+            execute(command, ACTIVE_CONNECTION.name)
+    except Exception as e:
+        logger.error(str(e))
+        return
+
+
 def main():
     global ACTIVE_CONNECTIONS
     global HOSTS
@@ -261,10 +333,10 @@ def main():
             command = prompt.show()
             if not command.startswith('!'):
                 if ACTIVE_CONNECTION:
-                    try:
-                        execute(command, ACTIVE_CONNECTION.name)
-                    except Exception as e:
-                        logger.error(e)
+                    if not command:
+                        continue
+
+                    execute(command, ACTIVE_CONNECTION.name)
                 else:
                     valid_cmds = '\n\t'.join(prompt.completer.options.keys())
                     logger.error(f'Valid commands are: {chr(10)}{chr(9)}{valid_cmds}')
@@ -286,6 +358,8 @@ def main():
                         port_forward(command, args)
                     elif command in ['get', 'put']:
                         transfer_file(command, args)
+                    elif command == 'adduser':
+                        create_user(args)
                 else:
                     if command in ['exit', 'quit']:
                         sys.exit(0)
