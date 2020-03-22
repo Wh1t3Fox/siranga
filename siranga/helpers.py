@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import ssh_config
 from ssh_config import SSHConfig
 from os.path import expanduser
+from pathlib import Path
 from os import path
 import os
 import subprocess
@@ -20,10 +22,16 @@ def host_lookup(name):
 def load_config():
     del HOSTS[:]
     if not path.isfile(expanduser(SSH_CONFIG_PATH)):
+        if not path.exists(os.path.dirname(SSH_CONFIG_PATH)):
+            os.makedirs(os.path.dirname(SSH_CONFIG_PATH))
+        Path(SSH_CONFIG_PATH).touch()
         return
 
-    for host in SSHConfig.load(expanduser(SSH_CONFIG_PATH)):
-        HOSTS.append(host)
+    try:
+        for host in SSHConfig.load(expanduser(SSH_CONFIG_PATH)):
+            HOSTS.append(host)
+    except ssh_config.client.EmptySSHConfig:
+        pass
 
 def socket_create(host):
     if not os.path.exists(SOCKET_PATH):

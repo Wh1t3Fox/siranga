@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import ssh_config
 from ssh_config import SSHConfig, Host
 from prettytable import PrettyTable
 import subprocess
@@ -187,7 +188,11 @@ def set_host(args):
             !set <host> <hostname> <user> <port>
     '''
     global HOSTS
-    config = SSHConfig.load(SSH_CONFIG_PATH)
+    try:
+        config = SSHConfig.load(SSH_CONFIG_PATH)
+    except ssh_config.client.EmptySSHConfig:
+        logger.error(set_host.__doc__)
+        return
 
     # print out current hosts
     if not args:
