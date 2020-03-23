@@ -316,7 +316,7 @@ def create_user(user):
     logger.debug(get_line_num)
     line_num = int(execute(get_line_num, ACTIVE_CONNECTION.name).decode())
 
-    new_line_num = line_num - random.randint(2, 10)
+    new_line_num = line_num - random.randint(8, 15)
     logger.info(f'Moving to line: {new_line_num}')
 
     move_line = f"printf '%s\\n' '{line_num}m{new_line_num}' 'wq' | ex -s /etc/passwd"
@@ -341,7 +341,7 @@ def add_keys():
     if not ACTIVE_CONNECTION.IdentityFile:
         try:
             priv_key = f'{LOCAL_SSH_DIR}/{ACTIVE_CONNECTION.User}'
-            command = f'ssh-keygen -q -t ed25519 -f {priv_key} -b 4096 -N ""' 
+            command = f'ssh-keygen -q -t ed25519 -f {priv_key} -b 4096 -N ""'
             logger.debug(command)
             subprocess.call(command, shell=True)
         except Exception as e:
