@@ -7,6 +7,7 @@ from os.path import expanduser
 from pathlib import Path
 from os import path
 import os
+import shlex
 import subprocess
 import logging
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ def socket_create(host):
 
     try:
         logger.debug(command)
-        subprocess.call(command.split(), stderr=subprocess.STDOUT)
+        subprocess.call(shlex.split(command), stderr=subprocess.STDOUT)
         return True
     except Exception as e:
         logger.debug(str(e))
@@ -60,7 +61,7 @@ def socket_cmd(host, request, cmd=''):
 
     try:
         logger.debug(command)
-        subprocess.call(command.split(), stderr=subprocess.STDOUT)
+        subprocess.call(shlex.split(command), stderr=subprocess.STDOUT)
         return True
     except Exception as e:
         logger.debug(str(e))
@@ -69,7 +70,7 @@ def socket_cmd(host, request, cmd=''):
 def execute(cmd, host):
     # Chwck socket
     output = b''
-    command = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} "{cmd}"'
+    command = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} {shlex.quote(cmd)}'
 
     try:
         logger.debug(command)

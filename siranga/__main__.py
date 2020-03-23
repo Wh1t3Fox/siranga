@@ -9,6 +9,7 @@ import argparse
 import logging
 import random
 import string
+import shlex
 import sys
 import os
 
@@ -170,8 +171,8 @@ def interactive_shell():
 
     # https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
     # Get rows and columns
-    orig_tty = subprocess.check_output(b'stty -g'.split())
-    tty_val = subprocess.check_output(b'stty -a'.split()).split(b';')
+    orig_tty = subprocess.check_output(shlex.split('stty -g'))
+    tty_val = subprocess.check_output(shlex.split('stty -a')).split(b';')
     rows = int(tty_val[1].split()[-1])
     columns = int(tty_val[2].split()[-1])
 
@@ -193,7 +194,7 @@ def interactive_shell():
     logger.debug(command)
     subprocess.call(command, shell=True)
 
-    subprocess.call(f'stty {orig_tty.decode()}'.split())
+    subprocess.call(shlex.split(f'stty {orig_tty.decode()}'))
 
 
 def get_active():
