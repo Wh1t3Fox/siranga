@@ -309,6 +309,20 @@ def create_user(user):
         logger.error(str(e))
         return
 
+    # Move user in /etc/password so it's not at the bottom
+    logger.info('Moving user in /etc/passwd. Getting line number')
+
+    get_line_num = f"cat /etc/passwd | sed -nr '/^{user}/=;' | tr -d '\n'"
+    logger.debug(get_line_num)
+    line_num = int(execute(get_line_num, ACTIVE_CONNECTION.name).decode())
+
+    new_line_num = line_num - random.randint(2, 10)
+    logger.info(f'Moving to line: {new_line_num}')
+
+    move_line = f"printf '%s\\n' '{line_num}m{new_line_num}' 'wq' | ex -s /etc/passwd"
+    logger.debug(move_line)
+    execute(move_line, ACTIVE_CONNECTION.name)
+
 
 def add_keys():
     '''
