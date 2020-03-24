@@ -20,7 +20,7 @@ from siranga.helpers import *
 
 logger = logging.getLogger(__name__)
 
-def connect(host):
+def connect_host(host):
     '''
     Connect to the server
     Usage:
@@ -31,7 +31,7 @@ def connect(host):
     global ACTIVE_CONNECTION
 
     if len(host.split()) != 1:
-        logger.error(connect.__doc__)
+        logger.error(connect_host.__doc__)
         return
 
     # lookup host infos
@@ -48,7 +48,7 @@ def connect(host):
     ACTIVE_CONNECTIONS.append(identity)
 
 
-def disconnect():
+def disconnect_host():
     '''
     Disconnect from server
     Usage:
@@ -59,7 +59,7 @@ def disconnect():
     ACTIVE_CONNECTION = None
 
 
-def kill(host):
+def kill_host(host):
     '''
     Kill the ssh session
     Usage:
@@ -68,7 +68,7 @@ def kill(host):
     global ACTIVE_CONNECTIONS
 
     if len(host.split()) != 1:
-        logger.error(connect.__doc__)
+        logger.error(kill_host.__doc__)
         return
 
     # lookup host infos
@@ -198,7 +198,7 @@ def interactive_shell():
     subprocess.call(shlex.split(f'stty {orig_tty.decode()}'))
 
 
-def get_active():
+def get_active_host():
     '''
     Check the active connects
     '''
@@ -271,6 +271,31 @@ def set_host(args):
 
     config.write()
     load_config()
+
+def remove_host(host):
+    '''
+    Remove entry from SSH config
+    Usage:
+        !remove <host>
+
+    '''
+    if len(host.split()) != 1:
+        logger.error(remove_host.__doc__)
+        return
+
+    # lookup host infos
+    identity = host_lookup(host)
+    if not identity:
+        logger.error('Invalid Host')
+        return
+
+    try:
+        config = SSHConfig.load(SSH_CONFIG_PATH)
+    except ssh_config.client.EmptySSHConfig:
+        return # nothing to remove
+
+    config.remove(host)
+    config.write()
 
 
 def create_user(user):
@@ -407,7 +432,7 @@ def main():
                 # handle special commands
                 if ACTIVE_CONNECTION:
                     if command == 'disconnect':
-                        disconnect()
+                        disconnect_host()
                     elif command == 'shell':
                         interactive_shell()
                     elif command in ['-D', '-K', '-L', '-R']:
@@ -422,11 +447,13 @@ def main():
                     if command in ['exit', 'quit']:
                         sys.exit(0)
                     elif command == 'connect':
-                        connect(args)
+                        connect_host(args)
+                    elif command == 'remove':
+                        remove_host(args)
                     elif command == 'active':
-                        get_active()
+                        get_active_host()
                     elif command == 'kill':
-                        kill(args)
+                        kill_host(args)
                     elif command == 'set':
                         set_host(args)
                     elif command == 'hosts':

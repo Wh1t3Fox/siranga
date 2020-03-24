@@ -85,7 +85,9 @@ class Prompt(object):
                 base_cmds['!active'] = None
                 
             if HOSTS:
-                base_cmds['!connect'] = WordCompleter([x.name for x in HOSTS])
+                host_names = [x.name for x in HOSTS]
+                base_cmds['!connect'] = WordCompleter(host_names)
+                base_cmds['!remove'] = WordCompleter(host_names)
 
             self.completer = NestedCompleter(base_cmds)
 
