@@ -84,6 +84,7 @@ def kill(host):
     socket_cmd(host, 'exit')
     if os.path.exists(f'{SOCKET_PATH}/{host}'):
         logger.error('Problem killing connection')
+        return
 
     for i, ident in enumerate(ACTIVE_CONNECTIONS):
         if host == ident.name:
@@ -198,14 +199,19 @@ def interactive_shell():
 
 
 def get_active():
+    '''
+    Check the active connects
+    '''
     global ACTIVE_CONNECTIONS
 
     try:
-        active_connects = [host_lookup(x) for x in os.listdir(SOCKET_PATH)]
-        ACTIVE_CONNECTIONS = list(set(active_connects) & set(ACTIVE_CONNECTIONS))
-        logger.info('\n'.join(x.name for x in ACTIVE_CONNECTIONS))
+        active = []
+        for conn in [host_lookup(x) for x in os.listdir(SOCKET_PATH)]:
+            active.append(conn)
+            logger.info(conn.name)
+        ACTIVE_CONNECTIONS = active
     except FileNotFoundError:
-        ACTIVE_CONNECTIONS = []
+        del ACTIVE_CONNECTIONS[:]
         return # no active
 
 

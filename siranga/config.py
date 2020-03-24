@@ -19,7 +19,7 @@ SSH_OPTS = '-o ControlMaster=auto' \
     ' -o ForwardX11=yes' \
     ' -o UserKnownHostsFile=/dev/null' \
     ' -o StrictHostKeyChecking=no' \
-    ' -o LogLevel=ERROR'
+    ' -o LogLevel=QUIET'
 
 style = Style.from_dict({
     # User input (default text).

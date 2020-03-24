@@ -74,14 +74,20 @@ class Prompt(object):
             for host in HOSTS:
                 _set[host.name] = WordCompleter(field_names)
 
-            self.completer = NestedCompleter({
-                '!connect': WordCompleter([x.name for x in HOSTS]),
-                '!hosts': None,
-                '!active': None,
+            base_cmds = {
                 '!set': NestedCompleter(_set),
-                '!kill': WordCompleter([x.name for x in ACTIVE_CONNECTIONS]),
+                '!hosts': None,
                 '!exit': None,
-            })
+            }
+
+            if ACTIVE_CONNECTIONS:
+                base_cmds['!kill'] = WordCompleter([x.name for x in ACTIVE_CONNECTIONS])
+                base_cmds['!active'] = None
+                
+            if HOSTS:
+                base_cmds['!connect'] = WordCompleter([x.name for x in HOSTS])
+
+            self.completer = NestedCompleter(base_cmds)
 
         return self._session.prompt(self.__prompt, completer=self.completer, style=style)
 
