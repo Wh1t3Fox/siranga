@@ -4,9 +4,7 @@ A ssh wrapper to make life a little bit easier. Why? I am lazy
 ### Installation
 
 ```bash
-git clone https://github.com/Wh1t3Fox/siranga
-cd siranga
-pip3 install .
+pip3 install siranga
 ```
 
 
