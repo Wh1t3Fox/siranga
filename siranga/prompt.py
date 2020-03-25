@@ -76,7 +76,6 @@ class Prompt(object):
 
             base_cmds = {
                 '!set': NestedCompleter(_set),
-                '!hosts': None,
                 '!exit': None,
             }
 

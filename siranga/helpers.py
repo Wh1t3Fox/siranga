@@ -22,6 +22,13 @@ def host_lookup(name):
     else:
         return None
 
+def hostname_lookup(ip, user):
+    for ident in HOSTS:
+        if ip == ident.HostName and user == ident.User:
+            return ident
+    else:
+        return None
+
 def load_config():
     del HOSTS[:]
     if not path.isfile(expanduser(SSH_CONFIG_PATH)):
@@ -37,10 +44,12 @@ def load_config():
         pass
 
 def socket_create(host):
+    SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}'
+
     if not os.path.exists(SOCKET_PATH):
         os.makedirs(SOCKET_PATH)
 
-    command = f'ssh -fN {SSH_OPTS} -S {SOCKET_PATH}/{host} {host}'
+    command = f'ssh -fN {SSH_OPTS} -S {SOCKET_PATH}/control_%r@%h:%p {host.name}'
 
     try:
         logger.debug(command)
@@ -52,12 +61,14 @@ def socket_create(host):
 
 
 def socket_cmd(host, request, cmd=''):
+    SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}/control_%r@%h:%p'
+
     # check - that the master process is running
     # forward - request forwardings without command execution
     # cancel - forwardings
     # exit - request the master to exit
     # stop - request the master to stop accepting further multiplexing requests
-    command = f'ssh -O {request} {cmd} -S {SOCKET_PATH}/{host} {host}'
+    command = f'ssh -O {request} {cmd} -S {SOCKET_PATH} {host.name}'
 
     try:
         logger.debug(command)
@@ -68,9 +79,11 @@ def socket_cmd(host, request, cmd=''):
         return False
 
 def execute(cmd, host):
+    SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}/control_%r@%h:%p'
+
     # Chwck socket
     output = b''
-    command = f'ssh {SSH_OPTS} -S {SOCKET_PATH}/{host} {host} {shlex.quote(cmd)}'
+    command = f'ssh {SSH_OPTS} -S {SOCKET_PATH} {host.name} {shlex.quote(cmd)}'
 
     try:
         logger.debug(command)
