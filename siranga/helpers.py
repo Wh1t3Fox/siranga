@@ -66,7 +66,7 @@ def socket_create(host):
 
 
 def socket_cmd(host, request, cmd=''):
-    if hosts is None:
+    if host is None:
         return 
 
     SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}/control_%r@%h:%p'
