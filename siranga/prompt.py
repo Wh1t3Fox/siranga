@@ -27,6 +27,9 @@ class Prompt(object):
             enable_history_search=True,)
 
     def get_jumps(self, host):
+        if host is None:
+            return
+
         if host.ProxyJump:
             jump = host.ProxyJump
             self.jumps.append(jump)
@@ -80,7 +83,7 @@ class Prompt(object):
             }
 
             if ACTIVE_CONNECTIONS:
-                base_cmds['!kill'] = WordCompleter([x.name for x in ACTIVE_CONNECTIONS])
+                base_cmds['!kill'] = WordCompleter([x.name for x in ACTIVE_CONNECTIONS if x])
                 base_cmds['!active'] = None
                 
             if HOSTS:

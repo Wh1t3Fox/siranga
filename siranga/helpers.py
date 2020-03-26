@@ -30,6 +30,8 @@ def hostname_lookup(ip, user):
         return None
 
 def load_config():
+    global HOSTS
+
     del HOSTS[:]
     if not path.isfile(expanduser(SSH_CONFIG_PATH)):
         if not path.exists(os.path.dirname(SSH_CONFIG_PATH)):
@@ -44,6 +46,9 @@ def load_config():
         pass
 
 def socket_create(host):
+    if host is None:
+        return
+
     SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}'
 
     if not os.path.exists(SOCKET_PATH):
@@ -61,6 +66,9 @@ def socket_create(host):
 
 
 def socket_cmd(host, request, cmd=''):
+    if hosts is None:
+        return 
+
     SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}/control_%r@%h:%p'
 
     # check - that the master process is running
@@ -79,6 +87,9 @@ def socket_cmd(host, request, cmd=''):
         return False
 
 def execute(cmd, host):
+    if host is None:
+        return
+
     SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}/control_%r@%h:%p'
 
     # Chwck socket

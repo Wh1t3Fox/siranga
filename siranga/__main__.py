@@ -31,7 +31,7 @@ def connect_host(host):
     global ACTIVE_CONNECTIONS
     global ACTIVE_CONNECTION
 
-    if len(host.split()) != 1:
+    if not host or len(host.split()) != 1:
         logger.error(connect_host.__doc__)
         return
 
@@ -68,7 +68,7 @@ def kill_host(host):
     '''
     global ACTIVE_CONNECTIONS
 
-    if len(host.split()) != 1:
+    if not host or len(host.split()) != 1:
         logger.error(kill_host.__doc__)
         return
 
@@ -103,7 +103,7 @@ def port_forward(cmd, opts):
         !-R <port>:<host>:<port> - Open reverse tunnel
         !-K -[R|L|D]<port>:<host>:<port> - stop forwarding
     '''
-    if len(opts.split()) != 1:
+    if not opts or len(opts.split()) != 1:
         logger.error(port_forward.__doc__)
         return
 
@@ -124,6 +124,9 @@ def transfer_file(direction, args):
         !get <remote_path>
         !put <local_path> <remote_path>
     '''
+    if not args or not direction:
+        logger.info(transfer_file.__doc__)
+        return
 
     if not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
@@ -292,7 +295,7 @@ def remove_host(host):
         !remove <host>
 
     '''
-    if len(host.split()) != 1:
+    if not host or len(host.split()) != 1:
         logger.error(remove_host.__doc__)
         return
 
@@ -317,7 +320,7 @@ def create_user(user):
     Usage:
         !adduser <username>
     '''
-    if len(user.split()) != 1:
+    if not user or len(user.split()) != 1:
         logger.error(create_user.__doc__)
         return
 
