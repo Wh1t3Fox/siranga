@@ -58,10 +58,12 @@ def socket_create(host):
 
     try:
         logger.debug(command)
-        subprocess.call(shlex.split(command), stderr=subprocess.STDOUT)
+        ret = subprocess.call(shlex.split(command), stderr=subprocess.STDOUT)
+        if ret != 0:
+            raise Exception("Failed to connect.")
         return True
     except Exception as e:
-        logger.debug(str(e))
+        logger.error(str(e))
         return False
 
 
