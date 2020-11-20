@@ -70,7 +70,9 @@ class Prompt(object):
                 '!-D': None,
                 '!-L': None,
                 '!-R': None,
-                '!-K': None,
+                '!-KD': None,
+                '!-KL': None,
+                '!-KR': None,
             })
         else:
             _set = {}
