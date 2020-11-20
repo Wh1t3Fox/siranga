@@ -32,7 +32,8 @@ class Prompt(object):
 
         if host.ProxyJump:
             jump = host.ProxyJump
-            self.jumps.append(jump)
+            if jump not in self.jumps:
+                self.jumps.append(jump)
             self.get_jumps(host_lookup(jump))
 
     @property
