@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 import os
 
 here = os.path.abspath(os.path.dirname(__file__))
-version = '0.3.4'
+version = '0.3.5'
 
 with open("README.md", 'r', encoding='utf-8') as f:
     long_description = f.read()
@@ -28,9 +28,9 @@ setup(
     ],
     keywords='ssh',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['prompt_toolkit==3.0.4', 'ssh-config==0.0.19', 'prettytable==0.7.2'],
+    install_requires=['prompt_toolkit==3.0.8', 'ssh-config==0.0.22', 'prettytable==2.0.0'],
     extras_require={
-        'dev': ['ipython==7.13.0','pytest==4.6.7'],
+        'dev': ['ipython==7.19.0','pytest==6.1.2'],
     },
     entry_points={
         'console_scripts': [

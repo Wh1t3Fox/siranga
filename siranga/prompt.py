@@ -62,18 +62,18 @@ class Prompt(object):
     def show(self):
         if self.active_host:
             self.completer = NestedCompleter({
-                '!disconnect': None,
-                '!adduser': None,
-                '!addkey': None,
-                '!get': None,
-                '!put': PathCompleter(),
-                '!shell': None,
                 '!-D': None,
                 '!-L': None,
                 '!-R': None,
                 '!-KD': None,
                 '!-KL': None,
                 '!-KR': None,
+                '!get': None,
+                '!put': PathCompleter(),
+                '!shell': None,
+                '!addkey': None,
+                '!adduser': None,
+                '!disconnect': None,
             })
         else:
             _set = {}
@@ -82,6 +82,7 @@ class Prompt(object):
 
             base_cmds = {
                 '!set': NestedCompleter(_set),
+                '!listen': None,
                 '!exit': None,
             }
 

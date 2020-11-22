@@ -7,6 +7,7 @@ from prettytable import PrettyTable
 import subprocess
 import argparse
 import logging
+import socket
 import random
 import string
 import shlex
@@ -99,9 +100,9 @@ def port_forward(cmd, opts):
     Open ports for tunneling
     Usage:
         !-D         <port> - setup socks proxy
-        !-L         <port>:<host>:<port> - local port forward
-        !-R         <port>:<host>:<port> - Open reverse tunnel
-        !-K[D|L|R]  <port>:<host>:<port> - stop forwarding
+        !-L         <local_port>:<host>:<remote_port> - local port forward
+        !-R         <remote_port>:<host>:<local_port> - Open reverse tunnel
+        !-K[D|L|R]  <port>:<host>:<port> - stop forwarding tunnel
     '''
     if not opts or len(opts.split()) != 1:
         logger.error(port_forward.__doc__)
@@ -409,6 +410,45 @@ def add_keys():
         logger.error(str(e))
         return
 
+
+def start_listener(port):
+    '''
+    Creates a listener to catch reverse shells
+    Usage:
+        !listen <port>
+        !listen 1337
+    '''
+    if not port:
+        logger.error(start_listener.__doc__)
+        return
+
+    if not port.isnumeric():
+        logger.error(start_listener.__doc__)
+        return
+
+    # setup listener
+    try:
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.bind(('', int(port)))
+        srv.listen(5)
+    except Exception as e:
+        logger.error(f'Unable to start listener: {e}')
+        return
+
+    # Blocking is okay because we only want to handle a single callback
+    logger.info(f'Waiting for client...')
+    try:
+        client_sock, addr = srv.accept()
+        logger.info(f'Connection from {addr[0]}')
+        listener_handler(client_sock)
+    except KeyboardInterrupt:
+        return
+    except Exception as e:
+        logger.error(e)
+        return
+
+
 def main():
     global ACTIVE_CONNECTIONS
     global HOSTS
@@ -468,6 +508,8 @@ def main():
                         kill_host(args)
                     elif command == 'set':
                         set_host(args)
+                    elif command == 'listen':
+                        start_listener(args)
 
 
         except (KeyboardInterrupt, EOFError) as e:

