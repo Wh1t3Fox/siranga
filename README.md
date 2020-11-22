@@ -4,7 +4,7 @@ A ssh wrapper to make life a little bit easier. Why? I am lazy
 ### Installation
 
 ```bash
-pip3 install siranga
+python3 -m pip install -U siranga
 ```
 
 
