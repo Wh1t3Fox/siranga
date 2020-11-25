@@ -6,10 +6,12 @@ from ssh_config import SSHConfig
 from os.path import expanduser
 from pathlib import Path
 from os import path
+from io import TextIOWrapper
 import os
 import shlex
 import time
 import subprocess
+import selectors
 import socket
 import logging
 logger = logging.getLogger(__name__)
@@ -117,10 +119,10 @@ def execute(cmd, host):
     return output
 
 
-def recv_timeout(sock, cmd=None):
+def recv_timeout(sock):
     sock.setblocking(0)
-    recv_data = ''
-    buf = ''
+    recv_data = b''
+    buf = b''
     begin = time.time()
 
     while True:
@@ -132,8 +134,8 @@ def recv_timeout(sock, cmd=None):
             break
         try:
             buf = sock.recv(1024)
-            if buf and buf != cmd:
-                recv_data += buf.decode()
+            if buf:
+                recv_data += buf
                 begin = time.time()
             else:
                 time.sleep(0.1)
@@ -144,29 +146,35 @@ def recv_timeout(sock, cmd=None):
 
 
 def listener_handler(conn):
-    sys.stdout.write(recv_timeout(conn))
+    
+    # Unbuffered stdin
+    sys.stdin = TextIOWrapper(
+            os.fdopen(sys.stdin.fileno(), 'br', buffering = 0),
+            write_through = True,
+            line_buffering = False
+    )
+    
+    sys.stdout.buffer.write(recv_timeout(conn))
     sys.stdout.flush()
     while True:
-        send_data = sys.stdin.readline().encode()
+        send_data = sys.stdin.buffer.read(64)
         if send_data:
             if send_data == b'!pty\n':
                 orig_tty = subprocess.check_output(shlex.split('stty -g'))
                 tty_val = subprocess.check_output(shlex.split('stty -a')).split(b';')
                 rows = int(tty_val[1].split()[-1])
                 columns = int(tty_val[2].split()[-1])
-                send_data = "(echo unset HISTFILE; " \
+                send_data = "(echo unset HISTFILE; echo export HISTCONTROL=ignorespace; echo tput rmam; " \
                             f"echo export TERM={os.environ['TERM']}; " \
                             f"echo stty rows {rows} columns {columns}; " \
-                             "echo reset; cat) | python -c 'import pty; pty.spawn(\"/bin/bash\")'\n"
-                # subprocess.check_output(shlex.split('stty raw -echo'))
-                conn.sendall(send_data.encode())
-            else:
-                conn.sendall(send_data)
+                             "echo reset; cat) | python -c 'import pty; pty.spawn(\"/bin/bash\")'\n".encode()
+                subprocess.call(shlex.split('stty raw -echo'), shell=True)
+            conn.sendall(send_data)
             if send_data == b'exit\n':
                 break
         else:
             continue
-        sys.stdout.write(recv_timeout(conn, send_data))
+        sys.stdout.buffer.write(recv_timeout(conn))
         sys.stdout.flush()
     conn.close()
     if orig_tty:
