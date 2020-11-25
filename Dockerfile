@@ -8,6 +8,7 @@ RUN apt-get update && apt-get upgrade -y && \
    python3-dev \
    python3-pip \
    python3-venv \
+   ncurses-term \
    locales \
    locales-all && \
  rm -fr /var/lib/apt/lists/* && \
@@ -26,5 +27,6 @@ ENV LC_ALL=en_US.UTF-8
 ENV LC_CTYPE=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
+ENV TERM=xterm-256color
 
-CMD ["siranga", "-h"]
+CMD ["siranga"]
