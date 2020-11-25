@@ -187,7 +187,7 @@ def interactive_shell():
 
     SOCKET_PATH = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.HostName}/control_%r@%h:%p'
     command = "stty raw -echo; " \
-               "(echo unset HISTFILE; " \
+               "(echo unset HISTFILE; echo export HISTCONTROL=ignorespace; echo tput rmam; " \
                f"echo export TERM={os.environ['TERM']}; " \
                f"echo stty rows {rows} columns {columns}; " \
                f"echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH} {ACTIVE_CONNECTION.name} "
