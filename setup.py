@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 import os
 
 here = os.path.abspath(os.path.dirname(__file__))
-version = '0.3.6'
+version = '0.3.7'
 
 with open("README.md", 'r', encoding='utf-8') as f:
     long_description = f.read()
