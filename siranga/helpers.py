@@ -46,8 +46,8 @@ def load_config():
         return
 
     try:
-        for host in SSHConfig.load(expanduser(SSH_CONFIG_PATH)):
-            HOSTS.append(host)
+        for host in SSHConfig(expanduser(SSH_CONFIG_PATH)):
+            HOSTS.add(host)
     except ssh_config.client.EmptySSHConfig:
         pass
 

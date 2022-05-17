@@ -246,10 +246,7 @@ def set_host(args):
             !set <host> <hostname> <user> <port>
     '''
     global HOSTS
-    try:
-        config = SSHConfig.load(SSH_CONFIG_PATH)
-    except ssh_config.client.EmptySSHConfig:
-        config = SSHConfig(SSH_CONFIG_PATH)
+    config = SSHConfig(SSH_CONFIG_PATH)
 
     # print out current hosts
     if not args:
@@ -310,9 +307,8 @@ def remove_host(host):
         logger.error('Invalid Host')
         return
 
-    try:
-        config = SSHConfig.load(SSH_CONFIG_PATH)
-    except ssh_config.client.EmptySSHConfig:
+    config = SSHConfig.load(SSH_CONFIG_PATH)
+    if not config:
         return # nothing to remove
 
     config.remove(host)
