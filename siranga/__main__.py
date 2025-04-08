@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Main Function File."""
 
-import ssh_config
 from ssh_config import SSHConfig, Host
 from prettytable import PrettyTable
 import subprocess
-import argparse
 import logging
 import socket
 import random
@@ -15,20 +13,28 @@ import glob
 import sys
 import os
 
-from siranga import ACTIVE_CONNECTION, ACTIVE_CONNECTIONS, HOSTS
-from siranga.prompt import Prompt
-from siranga.config import *
-from siranga.helpers import *
+from siranga import ACTIVE_CONNECTION, ACTIVE_CONNECTIONS, OUTPUT_PATH
+from .prompt import Prompt
+from .config import SSH_CONFIG_PATH, SSH_OPTS, field_names
+from .helpers import (
+    host_lookup,
+    hostname_lookup,
+    load_config,
+    socket_create,
+    socket_cmd,
+    execute,
+    listener_handler
+)
+
 
 logger = logging.getLogger(__name__)
 
 def connect_host(host):
-    '''
-    Connect to the server
+    """Connect to the server.
+
     Usage:
         !connect <host>
-    '''
-
+    """
     global ACTIVE_CONNECTIONS
     global ACTIVE_CONNECTION
 
@@ -51,22 +57,21 @@ def connect_host(host):
 
 
 def disconnect_host():
-    '''
-    Disconnect from server
+    """Disconnect from server.
+
     Usage:
         !disconnect
-    '''
-
+    """
     global ACTIVE_CONNECTION
     ACTIVE_CONNECTION = None
 
 
 def kill_host(host):
-    '''
-    Kill the ssh session
+    """Kill the ssh session.
+
     Usage:
         !kill <host>
-    '''
+    """
     global ACTIVE_CONNECTIONS
 
     if not host or len(host.split()) != 1:
@@ -96,14 +101,14 @@ def kill_host(host):
 
 
 def port_forward(cmd, opts):
-    '''
-    Open ports for tunneling
+    """Open ports for tunneling.
+
     Usage:
         !-D         <port> - setup socks proxy
         !-L         <local_port>:<host>:<remote_port> - local port forward
         !-R         <remote_port>:<host>:<local_port> - Open reverse tunnel
         !-K[D|L|R]  <port>:<host>:<port> - stop forwarding tunnel
-    '''
+    """
     if not opts or len(opts.split()) != 1:
         logger.error(port_forward.__doc__)
         return
@@ -119,13 +124,14 @@ def port_forward(cmd, opts):
 
 
 def transfer_file(direction, args):
-    '''
-    Recursively transfer file/folder
+    """Recursively transfer file/folder.
+
     Usage:
         !get <remote_path>
         !put <local_path> <remote_path>
-    '''
-    if not args or not direction:
+    """
+    command = ""
+    if not args or not direction or not ACTIVE_CONNECTION:
         logger.info(transfer_file.__doc__)
         return
 
@@ -154,7 +160,7 @@ def transfer_file(direction, args):
            os.makedirs(local_path)
 
         logger.info(f'Downloading to {local_path}')
-        command = f'scp -rp -o ControlPath={SOCKET_PATH} {ACTIVE_CONNECTION.name}:{path} {local_path}'
+        command = f'scp -rp -o ControlPath={SOCKET_PATH} {ACTIVE_CONNECTION.name}:{path} {local_path}' #noqa
 
     elif direction == 'put':
         if len(paths) != 2:
@@ -164,7 +170,7 @@ def transfer_file(direction, args):
         from_path, to_path = paths
 
         logger.info(f'FROM {from_path} TO {to_path}')
-        command = f'scp -rp -o ControlPath={SOCKET_PATH} {from_path} {ACTIVE_CONNECTION.name}:{to_path}'
+        command = f'scp -rp -o ControlPath={SOCKET_PATH} {from_path} {ACTIVE_CONNECTION.name}:{to_path}' #noqa
 
     try:
         logger.debug(command)
@@ -174,7 +180,8 @@ def transfer_file(direction, args):
 
 
 def interactive_shell():
-    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
+    """Drop into an interactive shell."""
+    if not ACTIVE_CONNECTION or not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
@@ -186,11 +193,13 @@ def interactive_shell():
     columns = int(tty_val[2].split()[-1])
 
     SOCKET_PATH = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.HostName}/control_%r@%h:%p'
-    command = "stty raw -echo; " \
-               "(echo unset HISTFILE; echo export HISTCONTROL=ignorespace; echo tput rmam; " \
-               f"echo export TERM={os.environ['TERM']}; " \
-               f"echo stty rows {rows} columns {columns}; " \
-               f"echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH} {ACTIVE_CONNECTION.name} "
+    command = (
+        "stty raw -echo; "
+        "(echo unset HISTFILE; echo export HISTCONTROL=ignorespace; echo tput rmam; "
+        f"echo export TERM={os.environ['TERM']}; "
+        f"echo stty rows {rows} columns {columns}; "
+        f"echo reset; cat) | ssh {SSH_OPTS} -S {SOCKET_PATH} {ACTIVE_CONNECTION.name}"
+    )
     # Pre-checks
     # python ?
     if execute('python -V', ACTIVE_CONNECTION).find(b'non-zero exit status') == -1:
@@ -212,9 +221,7 @@ def interactive_shell():
 
 
 def get_active_host():
-    '''
-    Check the active connects
-    '''
+    """Check the active connects."""
     global ACTIVE_CONNECTIONS
 
     active = []
@@ -230,21 +237,26 @@ def get_active_host():
         host = hostname_lookup(ip, user)
         if host is None:
             continue
-        table.add_row([host.name, host.HostName, host.User, host.Port, host.IdentityFile, host.ProxyJump])
+        table.add_row([host.name,
+                       host.HostName,
+                       host.User,
+                       host.Port,
+                       host.IdentityFile,
+                       host.ProxyJump])
         active.append(host)
     ACTIVE_CONNECTIONS = active
     logger.info(table)
 
 
 def set_host(args):
-    '''
-    Add/Modify ssh_config entry
+    """Add/Modify ssh_config entry.
+
     Usage:
         Update Field:
             !set <host> <field_name> <value>
         Add Entry:
             !set <host> <hostname> <user> <port>
-    '''
+    """
     global HOSTS
     config = SSHConfig(SSH_CONFIG_PATH)
 
@@ -256,13 +268,18 @@ def set_host(args):
         table.align = 'l'
 
         for host in config:
-            table.add_row([host.name, host.HostName, host.User, host.Port, host.IdentityFile, host.ProxyJump])
+            table.add_row([host.name,
+                           host.HostName,
+                           host.User,
+                           host.Port,
+                           host.IdentityFile,
+                           host.ProxyJump])
         logger.info(table)
         return
 
     current_hosts = [host.name for host in config]
 
-    args = list(map(lambda x: x.strip(), args.split()))
+    args = [x.strip() for x in  args.split()]
     # update entry
     if args[0] in current_hosts and len(args) == 3:
         if args[1] not in field_names:
@@ -291,12 +308,11 @@ def set_host(args):
     load_config()
 
 def remove_host(host):
-    '''
-    Remove entry from SSH config
+    """Remove entry from SSH config.
+
     Usage:
         !remove <host>
-
-    '''
+    """
     if not host or len(host.split()) != 1:
         logger.error(remove_host.__doc__)
         return
@@ -316,27 +332,28 @@ def remove_host(host):
 
 
 def create_user(user):
-    '''
-    Create a new user to login with keys
+    """Create a new user to login with keys.
+
     Usage:
         !adduser <username>
-    '''
+    """
     if not user or len(user.split()) != 1:
         logger.error(create_user.__doc__)
         return
 
-    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
+    if not ACTIVE_CONNECTION or not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
     # Check if user has perms
     if ACTIVE_CONNECTION.User != 'root':
         if execute('sudo -v', ACTIVE_CONNECTION).find(b'non-zero exit status') == -1:
-            logger.error(f'sudo command does not exist')
+            logger.error('sudo command does not exist')
             return
 
     # Generate password
-    passwd = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
+    passwd = ''.join([random.choice(string.ascii_letters + \
+            string.digits) for n in range(32)])
     logger.info(f'Creating user {user} with passowrd {passwd}')
 
     # Create User
@@ -374,16 +391,13 @@ def create_user(user):
 
 
 def add_keys():
-    '''
-    Generate SSH Keys and upload them
-    '''
-
-    if not socket_cmd(ACTIVE_CONNECTION, 'check'):
+    """Generate SSH Keys and upload them."""
+    if not ACTIVE_CONNECTION or not socket_cmd(ACTIVE_CONNECTION, 'check'):
         logger.error('No active connection')
         return
 
     LOCAL_SSH_DIR = f'{OUTPUT_PATH}/{ACTIVE_CONNECTION.name}'
-    if not path.exists(LOCAL_SSH_DIR):
+    if not os.path.exists(LOCAL_SSH_DIR):
         os.makedirs(LOCAL_SSH_DIR)
 
     # Generate keys if we don't have them
@@ -412,12 +426,12 @@ def add_keys():
 
 
 def start_listener(port):
-    '''
-    Creates a listener to catch reverse shells
+    """Create a listener to catch reverse shells.
+
     Usage:
         !listen <port>
         !listen 1337
-    '''
+    """
     if not port:
         logger.error(start_listener.__doc__)
         return
@@ -437,7 +451,7 @@ def start_listener(port):
         return
 
     # Blocking is okay because we only want to handle a single callback
-    logger.info(f'Waiting for Connection...')
+    logger.info('Waiting for Connection...')
     try:
         client_sock, addr = srv.accept()
         logger.info(f'Connection from {addr[0]}')
@@ -450,6 +464,7 @@ def start_listener(port):
 
 
 def main():
+    """Execute Main function."""
     global ACTIVE_CONNECTIONS
     global HOSTS
 
@@ -512,7 +527,7 @@ def main():
                         start_listener(args)
 
 
-        except (KeyboardInterrupt, EOFError) as e:
+        except (KeyboardInterrupt, EOFError):
             pass
         finally:
                 prompt.prompt = ACTIVE_CONNECTION

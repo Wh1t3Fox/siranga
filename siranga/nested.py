@@ -1,7 +1,6 @@
-"""
-Nestedcompleter for completion of hierarchical data structures.
-"""
-from typing import Any, Dict, Iterable, Mapping, Optional, Set, Union
+"""Nestedcompleter for completion of hierarchical data structures.."""
+from collections.abc import Iterable, Mapping
+from typing import Any, Optional, Union
 
 from prompt_toolkit.completion import CompleteEvent, Completer, Completion
 from prompt_toolkit.completion.word_completer import WordCompleter
@@ -9,9 +8,7 @@ from prompt_toolkit.document import Document
 
 __all__ = ["NestedCompleter"]
 
-# NestedDict = Mapping[str, Union['NestedDict', Set[str], None, Completer]]
-NestedDict = Mapping[str, Union[Any, Set[str], None, Completer]]
-
+NestedDict = Mapping[str, Union[Any, set[str], None, Completer]]
 
 class NestedCompleter(Completer):
     """
@@ -26,20 +23,19 @@ class NestedCompleter(Completer):
     """
 
     def __init__(
-        self, options: Dict[str, Optional[Completer]], ignore_case: bool = True
+        self, options: dict[str, Optional[Completer]], ignore_case: bool = True
     ) -> None:
 
         self.options = options
         self.ignore_case = ignore_case
 
     def __repr__(self) -> str:
-        return "NestedCompleter(%r, ignore_case=%r)" % (self.options, self.ignore_case)
+        """Representation."""
+        return f"NestedCompleter({self.options}, ignore_case={self.ignore_case})"
 
     @classmethod
     def from_nested_dict(cls, data: NestedDict) -> "NestedCompleter":
-        """
-        Create a `NestedCompleter`, starting from a nested dictionary data
-        structure, like this:
+        """Create a `NestedCompleter`, starting from a nested dictionary datastructure.
 
         .. code::
 
@@ -60,14 +56,14 @@ class NestedCompleter(Completer):
 
         Values in this data structure can be a completers as well.
         """
-        options: Dict[str, Optional[Completer]] = {}
+        options: dict[str, Optional[Completer]] = {}
         for key, value in data.items():
             if isinstance(value, Completer):
                 options[key] = value
             elif isinstance(value, dict):
                 options[key] = cls.from_nested_dict(value)
             elif isinstance(value, set):
-                options[key] = cls.from_nested_dict({item: None for item in value})
+                options[key] = cls.from_nested_dict(dict.fromkeys(value, None))
             else:
                 assert value is None
                 options[key] = None
@@ -77,6 +73,7 @@ class NestedCompleter(Completer):
     def get_completions(
         self, document: Document, complete_event: CompleteEvent
     ) -> Iterable[Completion]:
+        """Get the completions."""
         # Split document.
         text = document.text_before_cursor.lstrip()
         stripped_len = len(document.text_before_cursor) - len(text)

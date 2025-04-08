@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Init File."""
 
 import logging
 import logging.config
-import sys
 import os
 
+from .config import OUTPUT_PATH
 
-ACTIVE_CONNECTIONS = list()
+with open(os.path.join(os.path.dirname(__file__), "VERSION")) as fr:
+    __version__ = fr.read().strip()
+
+
+ACTIVE_CONNECTIONS = []
 ACTIVE_CONNECTION = None
-HOSTS = list()
+HOSTS = []
 
-from siranga.config import OUTPUT_PATH
 
 if not os.path.exists(OUTPUT_PATH):
     os.makedirs(OUTPUT_PATH)
@@ -43,9 +46,3 @@ logging.config.dictConfig({
         }
     }
 })
-
-logger = logging.getLogger(__name__)
-
-if sys.version_info[0] < 3:
-    logger.error('This script is supposed to be run with python3.')
-

@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Helper Functions."""
 
-import ssh_config
 from ssh_config import SSHConfig
 from os.path import expanduser
+from io import TextIOWrapper
 from pathlib import Path
 from os import path
-from io import TextIOWrapper
-import os
+import subprocess
+import logging
+import socket
 import shlex
 import time
-import subprocess
-import selectors
-import socket
-import logging
+import sys
+import os
+
+from siranga import HOSTS, OUTPUT_PATH
+from siranga.config import SSH_OPTS, SSH_CONFIG_PATH
+
+
 logger = logging.getLogger(__name__)
 
-from siranga import HOSTS
-from siranga.config import *
-
 def host_lookup(name):
+    """Lookup host."""
     for ident in HOSTS:
         if name == ident.name:
             return ident
@@ -28,6 +30,7 @@ def host_lookup(name):
 
 
 def hostname_lookup(ip, user):
+    """Lookup hostname."""
     for ident in HOSTS:
         if ip == ident.HostName and user == ident.User:
             return ident
@@ -36,6 +39,7 @@ def hostname_lookup(ip, user):
 
 
 def load_config():
+    """Load configuration file."""
     global HOSTS
 
     del HOSTS[:]
@@ -48,11 +52,12 @@ def load_config():
     try:
         for host in SSHConfig(expanduser(SSH_CONFIG_PATH)):
             HOSTS.append(host)
-    except ssh_config.client.EmptySSHConfig:
+    except Exception:
         pass
 
 
 def socket_create(host):
+    """Create socket."""
     if host is None:
         return
 
@@ -75,8 +80,9 @@ def socket_create(host):
 
 
 def socket_cmd(host, request, cmd=''):
+    """Send command via -O to SSH socket."""
     if host is None:
-        return 
+        return
 
     SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}/control_%r@%h:%p'
 
@@ -96,9 +102,10 @@ def socket_cmd(host, request, cmd=''):
         return False
 
 
-def execute(cmd, host):
+def execute(cmd, host) -> bytes:
+    """Execute remote command."""
     if host is None:
-        return
+        return b""
 
     SOCKET_PATH = f'{OUTPUT_PATH}/{host.HostName}/control_%r@%h:%p'
 
@@ -116,10 +123,14 @@ def execute(cmd, host):
         logger.debug(str(e))
         output = str(e).encode()
 
+    if not output:
+        return b""
+
     return output
 
 
 def recv_timeout(sock):
+    """Recv data."""
     sock.setblocking(0)
     recv_data = b''
     buf = b''
@@ -139,23 +150,24 @@ def recv_timeout(sock):
                 begin = time.time()
             else:
                 time.sleep(0.1)
-        except socket.error as e:
+        except socket.error as e: # noqa
             if not e.errno == 11:
                 raise
     return recv_data
 
 
 def listener_handler(conn):
-    
+    """Create Listener."""
     # Unbuffered stdin
     sys.stdin = TextIOWrapper(
             os.fdopen(sys.stdin.fileno(), 'br', buffering = 0),
             write_through = True,
             line_buffering = False
     )
-    
+
     sys.stdout.buffer.write(recv_timeout(conn))
     sys.stdout.flush()
+    orig_tty = None
     while True:
         send_data = sys.stdin.buffer.read(64)
         if send_data:
@@ -164,10 +176,12 @@ def listener_handler(conn):
                 tty_val = subprocess.check_output(shlex.split('stty -a')).split(b';')
                 rows = int(tty_val[1].split()[-1])
                 columns = int(tty_val[2].split()[-1])
-                send_data = "(echo unset HISTFILE; echo export HISTCONTROL=ignorespace; echo tput rmam; " \
-                            f"echo export TERM={os.environ['TERM']}; " \
-                            f"echo stty rows {rows} columns {columns}; " \
-                             "echo reset; cat) | python -c 'import pty; pty.spawn(\"/bin/bash\")'\n".encode()
+                send_data = (
+                    "(echo unset HISTFILE; echo export HISTCONTROL=ignorespace; echo tput rmam; " # noqa
+                    f"echo export TERM={os.environ['TERM']}; "
+                    f"echo stty rows {rows} columns {columns}; "
+                    "echo reset; cat) | python -c 'import pty; pty.spawn(\"/bin/bash\")'\n".encode() # noqa
+                )
                 subprocess.call(shlex.split('stty raw -echo'), shell=True)
             conn.sendall(send_data)
             if send_data == b'exit\n':

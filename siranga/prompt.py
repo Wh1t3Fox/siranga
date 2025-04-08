@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Prompt Confiuration."""
 
+from prompt_toolkit.completion import WordCompleter, PathCompleter
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit import PromptSession
-
 import logging
-logger = logging.getLogger(__name__)
 
 from siranga import ACTIVE_CONNECTIONS, HOSTS
-from siranga.helpers import host_lookup
-from siranga.config import *
+from .nested import NestedCompleter
+from .helpers import host_lookup
+from .config import  style, field_names
 
-class Prompt(object):
+logger = logging.getLogger(__name__)
+
+class Prompt:
+    """Custom Prompt Class."""
 
     def __init__(self, hosts=None):
         self.hosts = hosts
-        self.jumps = list()
+        self.jumps = []
         self.prompt = self.hosts
         self.active_host = None
         self.completer = None
@@ -27,6 +30,7 @@ class Prompt(object):
             enable_history_search=True,)
 
     def get_jumps(self, host):
+        """Get host jumps."""
         if host is None:
             return
 
@@ -38,6 +42,7 @@ class Prompt(object):
 
     @property
     def prompt(self):
+        """Return prompt."""
         return self.__prompt
 
     @prompt.setter
@@ -54,12 +59,13 @@ class Prompt(object):
                 self.__prompt.append(('class:jump', '→]'))
             self.__prompt.append(('class:host', f' ({host.name})'))
         else:
-            self.jumps = list()
+            self.jumps = []
 
         self.__prompt.append(('class:arrow', ' → '))
         self.active_host = host
 
     def show(self):
+        """Show Options."""
         if self.active_host:
             self.completer = NestedCompleter({
                 '!-D': None,
@@ -87,9 +93,9 @@ class Prompt(object):
             }
 
             if ACTIVE_CONNECTIONS:
-                base_cmds['!kill'] = WordCompleter([x.name for x in ACTIVE_CONNECTIONS if x])
+                base_cmds['!kill'] = WordCompleter([x.name for x in ACTIVE_CONNECTIONS if x]) # noqa
                 base_cmds['!active'] = None
-                
+
             if HOSTS:
                 host_names = [x.name for x in HOSTS]
                 base_cmds['!connect'] = WordCompleter(host_names)
@@ -97,6 +103,9 @@ class Prompt(object):
 
             self.completer = NestedCompleter(base_cmds)
 
-        return self._session.prompt(self.__prompt, completer=self.completer, style=style)
+        return self._session.prompt(
+                self.__prompt,
+                completer=self.completer,
+                style=style)
 
 
