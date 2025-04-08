@@ -1,0 +1,81 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "siranga"
+authors = [
+    {name = "Wh1t3Fox", email = "dev@exploit.design"}
+]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+dynamic = ["version", "description"]
+classifiers=[
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Environment :: Console",
+]
+dependencies = [
+        "prompt_toolkit==3.0.50", 
+        "ssh-config==0.1.5",
+        "prettytable==3.16.0"
+]
+
+[project.urls]
+Documentation = "https://github.com/Wh1t3Fox/siranga"
+Source = "https://github.com/Wh1t3Fox/siranga"
+
+[project.scripts]
+siranga = "siranga.__main__:main"
+
+[tool.black]
+line-length = 88
+exclude = '''
+
+(
+  /(
+      \.eggs        
+    | \.git        
+    | \.ruff_cache
+    | \.tox
+    | \.venv
+    | __pypackages__
+    | _build
+    | build
+    | dist
+    | venv
+  )/
+  | tempor/playbooks
+                     
+)
+'''
+
+[tool.ruff]
+line-length = 88
+exclude = [
+    ".eggs",
+    ".git",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "venv",
+]
+
+[tool.ruff.lint]
+select = ["D", "E", "F", "W", "B", "ISC", "C4", "UP"]
+fixable = ["D", "E", "F", "W", "B", "ISC", "C4", "UP"]
+ignore = ["B006", "B009", "B024", "B027", "D205", "D209"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
